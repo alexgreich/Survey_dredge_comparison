@@ -7,13 +7,13 @@ library(ggplot2)
 library(tidyverse)
 
 #read in data
-logbook <- read.csv("./data_folder/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
+logbook <- read.csv("./data_folder/new_data_dump/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
 
 ## catch data
-catch_raw <- read.csv("./data_folder/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
+catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
 
 ## specimen data
-specimen <- read.csv("./data_folder/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
 
 
 
@@ -39,9 +39,38 @@ joined_clean <- joined %>% filter(comname == "weathervane scallop")
 ##and I'm going to get a new datset from Ryan at some popint to account for a data entry error
 ##see Tyler email
 
+
+#calculate CPUE
+joined_clean_cpue <- joined_clean %>% 
+    mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
+           cpue_wt = samp_wt/area_swept_sqnm)
+
+#separate large and small scallops
+large_scallops <- joined_clean_cpue %>% filter(samp_grp==1) 
+
+
+small_scallops <- joined_clean_cpue %>% filter(samp_grp==2)
+
+#EDA
+ggplot(large_scallops) + aes(x=cpue_wt) + geom_density()
+ggplot(small_scallops) + aes(x=cpue_wt) + geom_density()
+hist(large_scallops$cpue_wt)
+hist(large_scallops$cpue_cnt)
+summary(large_scallops$cpue_wt)
+
+#log the CPUE
+hist(log(large_scallops$cpue_wt))
+hist(log(large_scallops$cpue_cnt)) #not normal but will pass
+
+hist(log(small_scallops$cpue_wt))
+hist(log(small_scallops$cpue_cnt)) #not normal but will pass
+
+
 ##randomized block ANOVA
 
 ##other statistical methods-
 
 
 #calculaute SHAD (shell height and .... uh... density?) to get the density distributions between the dredges
+##small and large as one. Don't separate for this one. see tyler notes and email
+#also see alyssa emails to check you're doing it right
