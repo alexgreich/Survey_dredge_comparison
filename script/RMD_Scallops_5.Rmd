@@ -561,6 +561,18 @@ large_wt_anova <- f_kapp_AR(data=large_m, method=2) #should boot be unparied?
 ##mehtod 2 means randomized block anova. Is this the same result as other anova?
 ##and which should be cpue 1 and which should be cpue 2?
 
+data <- large_m
+
+  tmp1 = data %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = data %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+
+large_wt_anova_log1 <- fpc(cpue1 = log(cpue1 + 1), cpue2= log(cpue2+1), boot_type="unpaired", method = 2, kapp_zeros="paired")
+large_wt_anova_log2 <- fpc(cpue2 = log(cpue1 + 1), cpue1= log(cpue2+1), boot_type="unpaired", method = 2)
+#why are these results not the same as my anova? I have confisuion here, AR
+
 test4
 
 
@@ -578,6 +590,11 @@ MSE sim with kappenman and ANOVA methods
 
 ```
 
+
+LATER TASKS
+-Do I need to log the randomized block anova data for the fpc function
+-directly compare fpc and anova results for the same data
+- complete the Kappenman and RB ANOVA MSE simulations
 
 
 ## Length distribution per gear type (kodiak vs. homer). Scallop catch size comparison
