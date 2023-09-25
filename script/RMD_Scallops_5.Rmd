@@ -1,0 +1,617 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+TO do:
+1. MSE simulations
+2. How do I do the specimen size distribution part? soemthing about WEIGHTS and the SAMPLE FACTOR
+
+
+THIS VERSION: I think the intercept is the grand mean.Adjust accordingly
+Load in packages.
+```{r}
+library(tidyverse)
+library(RColorBrewer)
+library(cowplot)
+```
+
+
+Read in data. -need to adjust this to work in RMD!!
+```{r}
+## logbook data
+logbook <- read.csv("./data_folder/new_data_dump/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
+
+## catch data
+catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
+
+## specimen data
+specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+```
+
+
+Data wrangle.
+
+```{r}
+# join logbook and catch in a way that preserves zero catches
+expand_grid(logbook,
+            distinct(transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #why did we do this part?
+  left_join(catch_raw) %>%
+  # fill in zero catches
+  replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
+  # filter for scallops
+  filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
+  
+
+# cpue will be samp_wt (or count) / area_swept_sqnm
+catch_cpue <- catch %>% 
+    mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
+           cpue_wt = samp_wt/area_swept_sqnm)
+
+# compute sample factor for specimen data 
+specimen %>%
+  # group by tow, samp grp, and size to get n at size
+  group_by(tow, samp_grp, shell_height) %>%
+  summarize(count = n()) %>%
+  # compute number measured per tow
+  group_by(tow, samp_grp) %>%
+  mutate(n_measured = n()) %>% ungroup %>%
+  # join to catch data
+  left_join(catch, by = c("tow", "samp_grp")) %>%
+  # compute sample factor
+  mutate(sample_factor = samp_cnt * (count / n_measured)) -> specimen
+
+#separate large and small scallops for cpue
+large <- catch_cpue %>% filter(samp_grp == 1)
+small <- catch_cpue %>% filter(samp_grp == 2)
+
+##Remove where both hauls are 0.
+##can do a for loop: for i in 1:haul{ if x==0 and y==0, (record the number of i in a vector )} 
+###THEN: delete the vector
+###try it in dplyr?
+####summarize: if x=0 and y=0 within a haul number
+##(I can also do this in excel in about 2 seconds...)
+large_2 <- large %>% #no change
+    group_by(haul) %>%
+    filter(!all(cpue_cnt == 0)) %>%
+    ungroup()
+
+small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
+    group_by(haul) %>%
+    filter(!all(cpue_cnt == 0)) %>%
+    ungroup()
+##calculate the grand mean in both datasets
+large_m <- large_2 %>%
+    mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
+           gear_code = factor(gear_code), haul = factor(haul))
+    
+
+small_m <- small_2 %>%
+    mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
+           gear_code = factor(gear_code), haul = factor(haul))
+
+```
+
+
+Exploratory graphs
+```{r}
+#any way, let's graph the data
+##separate into large and small scallops
+
+hist(log(large$cpue_wt+1))
+hist(large$cpue_wt)
+hist(small$cpue_wt)
+hist(log(small$cpue_wt))
+hist(log(large$cpue_wt))
+hist(log(small$cpue_cnt))
+hist(log(large$cpue_cnt))
+
+```
+
+
+## Data analysis
+
+### ANOVA method
+```{r}
+#log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
+##large scallops
+mod1_large_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m)
+mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
+#mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
+##same same, different way
+
+##small scallops
+mod1_small_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=small_m)
+mod1_small_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
+
+#based on the summary tables, gear_code, which is the two dredges, does not matter.
+sum_large_wt <- summary(mod1_large_wt)
+sum_large_cnt <- summary(mod1_large_cnt)
+sum_small_wt <- summary(mod1_small_wt)
+sum_small_cnt <- summary(mod1_small_cnt)
+
+```
+
+Get FPC table from ANOVA
+```{r}
+##calculate the Fishing Power Correction (FPC) estimator
+###looking at tyler's paper, is this one value? or two?
+s_large_wt <- sum_large_wt$coefficients[2,2]  #SE for large scallops
+g_large_wt <- sum_large_wt$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_wt <- exp(2*g_large_wt*(1+0.5*(s_large_wt^2)))
+
+
+s_large_cnt <- sum_large_cnt$coefficients[2,2]  #SE for large scallops
+g_large_cnt <- sum_large_cnt$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_cnt <- exp(2*g_large_cnt*(1+0.5*(s_large_cnt^2)))
+
+
+s_small_wt <- sum_small_wt$coefficients[2,2]  
+g_small_wt <- sum_small_wt$coefficients[2,1] 
+
+FPC_small_wt <- exp(2*g_small_wt*(1+0.5*(s_small_wt^2)))
+
+
+s_small_cnt <- sum_small_cnt$coefficients[2,2]  
+g_small_cnt <- sum_small_cnt$coefficients[2,1] 
+
+FPC_small_cnt <- exp(2*g_small_cnt*(1+0.5*(s_small_cnt^2)))
+
+FPC <- c(FPC_large_wt, FPC_large_cnt, FPC_small_wt, FPC_small_cnt)
+Category <- c("large (weight)" , "large(count)", "small(weight)", "small(count)")
+
+scallop_FPC_table <- data.frame(Category, FPC)
+
+#CALCULATE CONFIDENCE INTERVALS
+##95%CI = exp(2g (+-) 1.96 * 2sqrt(SE^2))
+
+upper_CI_large_wt <- exp(2*g_large_wt + 1.96*2*s_large_wt)
+lower_CI_large_wt <- exp(2*g_large_wt - 1.96*2*s_large_wt)
+upper_CI_large_cnt<- exp(2*g_large_cnt + 1.96*2*s_large_cnt)
+lower_CI_large_cnt<- exp(2*g_large_cnt - 1.96*2*s_large_cnt)
+upper_CI_small_wt <- exp(2*g_small_wt + 1.96*2*s_small_wt)
+lower_CI_small_wt <- exp(2*g_small_wt - 1.96*2*s_small_wt)
+upper_CI_small_cnt <-exp(2*g_small_cnt + 1.96*2*s_small_cnt)
+lower_CI_small_cnt <-exp(2*g_small_cnt - 1.96*2*s_small_cnt)
+
+
+upper_CI <- c(upper_CI_large_wt, upper_CI_large_cnt, upper_CI_small_wt, upper_CI_small_cnt)
+lower_CI <- c(lower_CI_large_wt, lower_CI_large_cnt, lower_CI_small_wt,lower_CI_small_cnt)
+
+
+scallop_FPC_table$Upper_CI <- upper_CI
+scallop_FPC_table$Lower_CI <- lower_CI
+
+scallop_FPC_table #ok I changed the haul and gear code to factor... because they are factors,,, and now I have sig results.
+##what just happened? Is this right?
+##qc'ed and it says to apply a FPC to the large scallops. Let's check the simulation method tho on that
+
+```
+
+
+More plots
+```{r}
+ggplot(large_m) + aes(x=bed_name, y=log(cpue_wt+1)) + geom_boxplot()
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1)) + geom_boxplot() #higher hauls have higher cpue
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name) + geom_boxplot()
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name) + geom_point()
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+#hmm. looks like in YAK 4 the new gear definitely fishes better (I think 5 is the new gear)
+
+
+
+ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1)) + geom_boxplot()
+ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) + scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+
+
+#temp?
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+```
+
+
+Residual plots - some possible outliers but no patters
+```{r}
+##plot resids
+plot(resid(mod1_large_cnt)) #couple of outliers
+plot(resid(mod1_large_wt))
+plot(resid(mod1_small_cnt)) #couple of outliers
+plot(resid(mod1_small_wt))  #up pattern
+
+qqnorm(log(large_m$cpue_wt+1))
+qqnorm(log(small_m$cpue_wt + 1))
+
+```
+
+
+
+MSE simulation - maybe ask tyler if I can access the code from the Spaulinger and JAckson MSE simulation? Or maybe Munro 1998 or another source has more descriptive info. - I gOt access!!
+```{r}
+#FIRST, a vector of CPUE values with length two times the observed number of successful paired hauls were simulated assuming a log normal distribution, with mean and SD equal to that of the observed data collected on.... ug, which one? its the resolution (one of the two vessels) in the depaul paper...
+##I think in my case use the Homer dredge (the old dredge) for the mean and sd. CAn I use both the old and new dredge for the mean and SD...?
+####maybe ask tyler that. Why did they just use the mean and SD from the Resolution for the simulations? Why not the solstice as well?
+
+#SECOND, a known fishing power difference was applied (WHAT DOES THIS MEAN...) to half of the simulated values to reproesent catches (ie CPUE) of two vessels with unequal fishing power, and an FPC was estimted during the approach descibed above
+##I DO NOT UNDERSTAND THIS STEP
+
+#THIRD, a copy of the cPUE vector was corrected using the estimated FPC while leaving the other uncorrected
+
+#FORTH, Mean CPUE was estimated for 1) uncoorected values and 2) values corrected by the estimated FPC
+
+#THIS PROCESS WAS REPEATED 400 TIMES each for a sequence of fishing power differences from 0.1 to 2 in intervals of 0.1
+
+#MSE of corrected and uncorrected simulations was computed as:
+#MSE[CPUE_hat] = E((CPUE_hat-grandmean)^2)
+
+
+
+##MUNROE NOTES
+#
+```
+
+
+Try kappenman's, does it work? Allegedly, yes.
+```{r}
+library(fishmethods)
+library(dplyr)
+data <- large_m
+
+  tmp1 = data %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = data %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+
+kapp_test1 = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+
+kapp_test2 = try(fishmethods::fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+#says fishing power correction not needed, for the Kappenman method. Interesting
+#the one with the zero haul is deleted
+
+kapp_test3 = try(fishmethods::fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "paired"), silent = T)
+#and this one does not have CI's, beause pf the paired boot type
+
+test4 =try(fishmethods::fpc(cpue2, cpue1, method = 2, kapp_zeros = "ind", boot_type = "unpaired"), silent = T) #randomized block anova
+##says fishing power correction needed, for the large randomized block ANOVA
+#the one with the zero haul is not deleted
+```
+
+
+Kappenman's : Tyler code
+```{r}
+#Tyler code below
+library(fishmethods)
+
+## kappenman (1992)
+### wrapper for fishmethods::fpc for paired data
+f_kapp <- function(data, ves1, ves2, vessel_name = "vessel", cpue_name = "cpue") {
+  
+  # ensure vessel and cpue columns are properly named
+  data %>%
+    rename(vessel = as.name(vessel_name),
+           cpue = as.name(cpue_name)) -> data
+  
+  # pivot data to wide format (i.e., in pairs)
+  data %>%
+    pivot_wider(names_from = vessel, values_from = cpue) -> data
+  # extract cpue vectors from data
+  cpue1 = data %>% pull(as.name(ves1)) # standard vessel
+  cpue2 = data %>% pull(as.name(ves2)) 
+  
+  # call fishmethods::fpc
+  kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+  #kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4), silent = T)
+  
+  # organize results
+  if(class(kapp) == "try-error"){
+    tibble(n = NA,
+           cpue1 = NA,
+           cpue2 = NA,
+           fpc = NA,
+           boot_se = NA,
+           boot_l95 = NA,
+           boot_u95 = NA) -> out
+  } else{
+    kapp %>%
+      as_tibble() %>%
+      rename(n = n1,
+             cpue1 = `mean cpue1`,
+             cpue2 = `mean cpue2`,
+             fpc = FPC,
+             boot_se = Boot_SE,
+             boot_l95 = `Boot_95%_LCI`,
+             boot_u95 = `Boot_95%_UCI`) %>%
+      dplyr::select(n, cpue1, cpue2, fpc, boot_se, boot_l95, boot_u95) -> out
+  }
+    
+  # fix names
+  names(out)[2] = paste0(ves1, "_cpue")
+  names(out)[3] = paste0(ves2, "_cpue")
+  
+  # output
+  return(out)
+  
+}
+
+
+f_kapp_AR <- function(data, method) {
+    #deleted args from function: ves1, ves2, vessel_name = "vessel"
+  
+  # ensure vessel and cpue columns are properly named
+  #data %>%
+   # rename(vessel = as.name(vessel_name),
+    #       cpue = as.name(cpue_name)) -> data
+  
+  # pivot data to wide format (i.e., in pairs)
+ # data %>%
+    #pivot_wider(names_from = vessel, values_from = cpue_wt) -> data
+  # extract cpue vectors from data
+ # cpue1 = data %>% pull(as.name(ves1)) # standard vessel
+ # cpue2 = data %>% pull(as.name(ves2)) 
+  
+  #alex code
+  tmp1 = data %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = data %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+  
+  # call fishmethods::fpc
+  kapp = try(fishmethods::fpc(cpue1, cpue2, method = method, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+  #kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4), silent = T)
+  #AR adjusted so that cpue 2 is the first number and cpue 1 is the second number
+  #cpue 2 is for gear type 5 (new dredge)
+  #cpue 1 is for gear type 1(old dredge)
+  
+  # organize results
+  if(class(kapp) == "try-error"){
+    tibble(n = NA,
+           cpue1 = NA,
+           cpue2 = NA,
+           fpc = NA,
+           boot_se = NA,
+           boot_l95 = NA,
+           boot_u95 = NA) -> out
+  } else{
+    kapp %>%
+      as_tibble() %>%
+      rename(n = n1,
+             cpue1 = `mean cpue1`,
+             cpue2 = `mean cpue2`,
+             fpc = FPC,
+             boot_se = Boot_SE,
+             boot_l95 = `Boot_95%_LCI`,
+             boot_u95 = `Boot_95%_UCI`) %>%
+      dplyr::select(n, cpue1, cpue2, fpc, boot_se, boot_l95, boot_u95) -> out
+  }
+    
+  # fix names
+  #names(out)[2] = paste0(ves1, "_cpue")
+  #names(out)[3] = paste0(ves2, "_cpue")
+  
+  # output
+  return(out)
+  
+}
+
+#ok ok, that should be a functional function. f_kapp_AR
+
+f_kapp_AR(data=large_m)
+##hmm I don't think this needed to be a function at all.
+```
+
+Tyler Q
+- how to load fishmethods? x
+- can I see the data strucutre for the Depaul and Tyler 2022 code? What the column names are?
+- DO i USE PAIRED OR UNPAIRED FOR THE KAPPENMANN BOOT METHOD??
+-what's the deal with kappenman's not using the zero in my data? Kappenman;s and anova get different results and I am concerned.
+--I can bootsrap both Kappenmans and ANOVA by changing method=4(kappenmans) to method=2(R.B. ANOVA) within the fpc function.
+
+
+MSE sim with KAPP- see line 234 of tyler code and adjust so it works for my code
+```{r}
+#tyler code
+### mse simulation (Munro 1998; von Szalay and Brown 2001)
+f_kapp_mse_sim <- function(data, n, method){
+  
+  # pull cpue from data
+  data %>%
+    pull(cpue) -> cpue  
+    
+  # compute parameters of lognormal dist
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
+  var = log(1+(sd(cpue)/mean(cpue))^2)
+  
+  # check pdf
+  #hist(cpue, freq = F)
+  #lines(density(rlnorm(1000, meanlog = mu, sdlog = sqrt(var))), col = 2)
+  
+  cpue_u = NULL
+  cpue_c = NULL
+  mse_u = NULL
+  mse_c = NULL
+  fpd = seq(0.1, 2, 0.1)
+  for(i in 1:length(fpd)){
+    for(j in 1:200){
+      # simulate cpue standard vessel
+      res_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var))
+      # simulate cpue non-standard vessel
+      sol_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i]
+      # estimate FPC
+      fpc <- fpc(cpue1 = res_sim, cpue2 = sol_sim, method = method, nboot = 0, kapp_zeros = "ind")
+      
+      # join vessel cpues to one vector
+      ## uncorrected
+      survey_u = c(res_sim, sol_sim)
+      ## corrected
+      survey_c = c(res_sim, (sol_sim * fpc$FPC))  # scale to standard vessel
+      
+      # compute means of uncorrected and corrected data
+      cpue_u[j] = mean(survey_u)
+      cpue_c[j] = mean(survey_c)
+      
+    }
+    mse_u[i] = mean((cpue_u - mean(cpue))^2)
+    mse_c[i] = mean((cpue_c - mean(cpue))^2)
+  }
+  
+  tibble(fpd = fpd,
+         mse_u = mse_u,
+         mse_c = mse_c)
+  
+}
+
+
+#AR adjustments
+f_kapp_mse_sim_AR1 <- function(data, n, method){
+  
+  # pull cpue from data
+  data %>%
+    pull(cpue_wt) -> cpue  
+    
+  # compute parameters of lognormal dist
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
+  var = log(1+(sd(cpue)/mean(cpue))^2) #ah. for the bootstrap. AR.
+  
+  # check pdf
+  #hist(cpue, freq = F)
+  #lines(density(rlnorm(1000, meanlog = mu, sdlog = sqrt(var))), col = 2)
+  
+  cpue_u = NULL
+  cpue_c = NULL
+  mse_u = NULL
+  mse_c = NULL
+  fpd = seq(0.1, 2, 0.1) #AR WHAT IS THIS??
+  for(i in 1:length(fpd)){
+    for(j in 1:200){
+      # simulate cpue standard vessel aka the Homer dredge
+      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
+      # simulate cpue non-standard vessel aka the Kodiak dredge
+      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
+      # estimate FPC
+      fpc <- fpc(cpue1 = hom_sim, cpue2 = kod_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
+      ##CAREFUIL!!  RES_SIM AND SOL_SIM ABOVE NEED TO BE REPLACED WITH WHAT IS MEANINGFOR TO YOUR VESSEL
+      
+      # join vessel cpues to one vector
+      ## uncorrected
+      survey_u = c(hom_sim, kod_sim)
+      ## corrected
+      survey_c = c(hom_sim, (kod_sim * fpc$FPC))  # scale to standard vessel
+      
+      # compute means of uncorrected and corrected data
+      cpue_u[j] = mean(survey_u)
+      cpue_c[j] = mean(survey_c)
+      
+    }
+    mse_u[i] = mean((cpue_u - mean(cpue))^2)
+    mse_c[i] = mean((cpue_c - mean(cpue))^2)
+  }
+  
+  tibble(fpd = fpd,
+         mse_u = mse_u,
+         mse_c = mse_c)
+  
+}
+
+cb_palette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
+                "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+### simulation plot function AR
+f_sim_plot <- function(data){
+  # plot data
+  data %>%
+    pivot_longer(cols=c("mse_u", "mse_c"), names_to = "sim", values_to = "mse") %>%
+    mutate(sim = case_when(sim == "mse_u" ~ "Uncorrected",
+                           sim == "mse_c" ~ "Corrected")) %>%
+    ggplot()+
+    geom_point(aes(x = fpd, y = mse, color = sim), alpha = 0.3)+
+    geom_smooth(aes(x = fpd, y = mse, color = sim), method = "lm",formula = y ~ poly(x, 2), se = F)+
+   # scale_color_manual(values = cb_palette[c(1,3)])+
+   # geom_vline(aes(xintercept = fpc), linetype = 2)+ #add in later? PROBS. AR
+    labs(x = "Fishing Power Difference", y = "MSE", color = NULL)+
+    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2)) -> x
+  # save
+ # ggsave(paste0(path_prefix, spp_name, ".png"), plot = x, width = 5, height = 4, units = "in")
+  return(x)
+}
+#does not work, but meh,
+
+
+#large
+test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4)
+f_sim_plot(data=test_large) #ok so I'll need to add FPC estimate in there manually.
+
+#small
+```
+
+Run the thing
+```{r}
+#kappenman large scallops
+large_wt_kapp <- f_kapp_AR(data=large_m, method=4)
+
+#kappenman small scallpps
+small_wt_kapp<- f_kapp_AR(data=small_m, method=4)
+
+##RB ANOVA large scallops
+large_wt_anova <- f_kapp_AR(data=large_m, method=2) #should boot be unparied?
+##mehtod 2 means randomized block anova. Is this the same result as other anova?
+##and which should be cpue 1 and which should be cpue 2?
+
+test4
+
+
+#RB ANOVA small scallops
+small_wt_anova <- f_kapp_AR(data=small_m, method=2) #shit that is a huge considence interval. Is this done correctly?
+
+#homer consistently smaller than kodiak but confidence intercals (via this method) say dont apply the FPC
+```
+#homer consistently smaller than kodiak but confidence intercals (via this method) say dont apply the FPC
+. BUT I should do the simulation CI's? And what about the CI's I've already done? ARe they wrong, and if so, why???
+SHIT!! HAVE I LOGGED THINGS? I NEED TO LOG THINGS. FOr the ANOVA at least, and possibly the kappenmans
+
+MSE sim with kappenman and ANOVA methods
+```{r}
+
+```
+
+
+
+## Length distribution per gear type (kodiak vs. homer). Scallop catch size comparison
+
+Graph
+```{r}
+#ggplot(specimen) + aes(x=shell_height, y=count) +geom_point() + facet_wrap(~gear_code_description)
+#hist(specimen$shell_height)
+
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group = factor(gear_code)) +geom_density()+
+    theme_minimal() #
+
+
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group = factor(gear_code)) +geom_boxplot()+
+    theme_minimal() 
+
+ggplot(specimen) + aes(y=shell_height, x=haul, color=factor(gear_code), group = factor(gear_code), size=sample_factor) +geom_point(alpha=0.7, shape=1)+
+    theme_minimal() + scale_color_brewer(type = "qual")
+```
+Graph interpret: hmm does Kodiak dredge (new dredge, 5) have smaller mesh size?
+
+
+I can write a model that does shell height ~ u(intercept aka grand mean) + gear_type(1(homer) or 5(kodiak)) + haul(haul ID)
+Q: - how do I incorporate the sample factor? Something about weights?
+
+BUT
+Something about the weight proportion: the # of count of scallops in small category compared to large.
+I'm confused about what I'm supposed to do here. Maybe go back and read things?
+-emails
+-alyssa summary document
+-tyler emails and notes
+
+
+## Questions
+In the notes it sometimes says "wheels off." When the "wheels off" statement isn't there, does it mean the wheels are on? The summary indicated which one fished better, and I think it was when wheels were off. (check!!!)
+
+- what were all of the caveats again?
