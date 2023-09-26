@@ -30,7 +30,13 @@ joined3 <-left_join(logbook, catch_raw)
 joined4 <- inner_join(logbook, catch_raw)
 joined5 <- inner_join(catch_raw, logbook)
 joined <- left_join(logbook, catch_raw, relationship="one-to-one")
+joined_full <- full_join(logbook, catch_raw, by)
+##line 62 is
 
+#09/15/23 so the above is right but not entierly right . We need to add the zero catches
+##testing joined_full
+###line 62 in this is a zero. There are others.
+##check tyler email
 
 #alex explores
 unique(joined$comname)
@@ -44,6 +50,10 @@ joined_clean <- joined %>% filter(comname == "weathervane scallop")
 joined_clean_cpue <- joined_clean %>% 
     mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
            cpue_wt = samp_wt/area_swept_sqnm)
+
+
+
+###END TYLER BETA
 
 #separate large and small scallops
 large_scallops <- joined_clean_cpue %>% filter(samp_grp==1) 
@@ -64,6 +74,19 @@ hist(log(large_scallops$cpue_cnt)) #not normal but will pass
 
 hist(log(small_scallops$cpue_wt))
 hist(log(small_scallops$cpue_cnt)) #not normal but will pass
+
+
+########################################
+###TYLER BETA
+expand_grid(logbook,
+            distinct(transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>%
+    left_join(catch_raw) %>%
+    # fill in zero catches
+    replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
+    # filter for scallops
+    filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
+
+#########################################
 
 
 ##randomized block ANOVA

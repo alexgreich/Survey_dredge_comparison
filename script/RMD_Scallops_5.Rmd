@@ -268,7 +268,10 @@ data <- large_m
 
 kapp_test1 = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
 
+kapp_test1.2 = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "paired", boot_type = "unpaired"), silent = T)
+
 kapp_test2 = try(fishmethods::fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+kapp_test2.1 = try(fishmethods::fpc(cpue2, cpue1, method = 4, kapp_zeros = "paired", boot_type = "unpaired"), silent = T)
 #says fishing power correction not needed, for the Kappenman method. Interesting
 #the one with the zero haul is deleted
 
@@ -278,6 +281,9 @@ kapp_test3 = try(fishmethods::fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", 
 test4 =try(fishmethods::fpc(cpue2, cpue1, method = 2, kapp_zeros = "ind", boot_type = "unpaired"), silent = T) #randomized block anova
 ##says fishing power correction needed, for the large randomized block ANOVA
 #the one with the zero haul is not deleted
+
+#try with log values?
+
 ```
 
 
