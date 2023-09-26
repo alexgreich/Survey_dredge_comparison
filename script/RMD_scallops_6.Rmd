@@ -430,10 +430,12 @@ f_sim_plot(data=test_large, fpc=FPC_large_wt) #need to chage the fpc to a kapp v
 
 #kapp
 kapp_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=4)
-f_sim_plot(data=kapp_mse_large, fpc=kapp_wt_L2)
+f_sim_plot(data=kapp_mse_large, fpc=kapp_wt_L2$FPC)
+##says dont use FPC(because it increases error) 
 
 kapp_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=4)
-f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2)
+f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2$FPC)
+#borderline
 
 ```
 
@@ -445,10 +447,11 @@ f_sim_plot(data=test_large_MSE_ANOVA, fpc=FPC_large_wt)
 #oh dang. When n=48,the MSE is small enough where we apply the FPC.
 
 small_MSE_ANOVA <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
-f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt)
+f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt) 
+#this one is confusing. RIGHT ON THAT BOUNDARY! #oh but we do not acceot due to the CI's overlapping with 1 (the ANOVA CI's)
 ```
 
-Now do this for small scallops too
+Now do this for count (large and small) cpue too
 ```{r}
 
 ```
