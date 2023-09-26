@@ -255,6 +255,10 @@ dat <- large_m
 
 kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
 kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
+ANOVA_fpc_l_wt_cheating <- fpc(cpue1, cpue2, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+
+ANOVA_fpc_l_wt_cheating #ok. the shortcut method seems identical to the lm method
+FPC_large_wt
 
 #small
 dat <- small_m
@@ -425,7 +429,8 @@ test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be
 f_sim_plot(data=test_large, fpc=FPC_large_wt) 
 ```
 
-MSE sim ANOVA
+MSE sim ANOVA FPC- see lines 498 on. 
+I do not understand but can edit this  myself
 ```{r}
 
 ```
