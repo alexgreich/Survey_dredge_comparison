@@ -1,0 +1,432 @@
+---
+title: "RMD_scallops_6"
+author: "Alex Reich"
+date: "2023-09-26"
+output: html_document
+---
+WARNNG: I am gettign diff #'s than initially which is extremely concerning... anova has 5 as standard adn 1 is changed. That;s what I want but idk why that happened.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(RColorBrewer)
+library(cowplot)
+library(fishmethods)
+```
+
+
+
+Read in data. 
+```{r}
+## logbook data
+logbook <- read.csv("./data_folder/new_data_dump/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
+
+## catch data
+catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
+
+## specimen data
+specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+```
+
+Data wrangle.
+
+```{r}
+# join logbook and catch in a way that preserves zero catches
+expand_grid(logbook,
+            distinct(transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #why did we do this part?
+  left_join(catch_raw) %>%
+  # fill in zero catches
+  replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
+  # filter for scallops
+  filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
+  
+
+# cpue will be samp_wt (or count) / area_swept_sqnm
+catch_cpue <- catch %>% 
+    mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
+           cpue_wt = samp_wt/area_swept_sqnm)
+
+# compute sample factor for specimen data 
+specimen %>%
+  # group by tow, samp grp, and size to get n at size
+  group_by(tow, samp_grp, shell_height) %>%
+  summarize(count = n()) %>%
+  # compute number measured per tow
+  group_by(tow, samp_grp) %>%
+  mutate(n_measured = n()) %>% ungroup %>%
+  # join to catch data
+  left_join(catch, by = c("tow", "samp_grp")) %>%
+  # compute sample factor
+  mutate(sample_factor = samp_cnt * (count / n_measured)) -> specimen
+
+#separate large and small scallops for cpue
+large <- catch_cpue %>% filter(samp_grp == 1)
+small <- catch_cpue %>% filter(samp_grp == 2)
+
+##Remove where both hauls are 0.
+##can do a for loop: for i in 1:haul{ if x==0 and y==0, (record the number of i in a vector )} 
+###THEN: delete the vector
+###try it in dplyr?
+####summarize: if x=0 and y=0 within a haul number
+##(I can also do this in excel in about 2 seconds...)
+large_2 <- large %>% #no change
+    group_by(haul) %>%
+    filter(!all(cpue_cnt == 0)) %>%
+    ungroup()
+
+small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
+    group_by(haul) %>%
+    filter(!all(cpue_cnt == 0)) %>%
+    ungroup()
+##calculate the grand mean in both datasets
+large_m <- large_2 %>%
+    mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
+           gear_code = factor(gear_code), haul = factor(haul))
+    
+
+small_m <- small_2 %>%
+    mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
+           gear_code = factor(gear_code), haul = factor(haul))
+
+```
+
+
+Exploratory graphs
+```{r}
+#any way, let's graph the data
+##separate into large and small scallops
+
+hist(log(large$cpue_wt+1))
+hist(large$cpue_wt)
+hist(small$cpue_wt)
+hist(log(small$cpue_wt))
+hist(log(large$cpue_wt))
+hist(log(small$cpue_cnt))
+hist(log(large$cpue_cnt))
+
+```
+
+
+
+
+## Data analysis
+
+### ANOVA method
+```{r}
+#log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
+##large scallops
+mod1_large_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m)
+mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
+#mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
+##same same, different way
+
+##small scallops
+mod1_small_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=small_m)
+mod1_small_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
+
+#based on the summary tables, gear_code, which is the two dredges, does not matter.
+sum_large_wt <- summary(mod1_large_wt)
+sum_large_cnt <- summary(mod1_large_cnt)
+sum_small_wt <- summary(mod1_small_wt)
+sum_small_cnt <- summary(mod1_small_cnt)
+
+```
+
+Get FPC table from ANOVA
+```{r}
+##calculate the Fishing Power Correction (FPC) estimator
+###looking at tyler's paper, is this one value? or two?
+s_large_wt <- sum_large_wt$coefficients[2,2]  #SE for large scallops
+g_large_wt <- sum_large_wt$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_wt <- exp(2*g_large_wt*(1+(0.5*(s_large_wt^2)))) 
+
+
+s_large_cnt <- sum_large_cnt$coefficients[2,2]  #SE for large scallops
+g_large_cnt <- sum_large_cnt$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_cnt <- exp(2*g_large_cnt*(1+0.5*(s_large_cnt^2)))
+
+
+s_small_wt <- sum_small_wt$coefficients[2,2]  
+g_small_wt <- sum_small_wt$coefficients[2,1] 
+
+FPC_small_wt <- exp(2*g_small_wt*(1+0.5*(s_small_wt^2)))
+
+
+s_small_cnt <- sum_small_cnt$coefficients[2,2]  
+g_small_cnt <- sum_small_cnt$coefficients[2,1] 
+
+FPC_small_cnt <- exp(2*g_small_cnt*(1+0.5*(s_small_cnt^2)))
+
+FPC <- c(FPC_large_wt, FPC_large_cnt, FPC_small_wt, FPC_small_cnt)
+Category <- c("large (weight)" , "large(count)", "small(weight)", "small(count)")
+
+scallop_FPC_table <- data.frame(Category, FPC)
+
+#CALCULATE CONFIDENCE INTERVALS
+##95%CI = exp(2g (+-) 1.96 * 2sqrt(SE^2))
+
+upper_CI_large_wt <- exp(2*g_large_wt + 1.96*2*s_large_wt)
+lower_CI_large_wt <- exp(2*g_large_wt - 1.96*2*s_large_wt)
+upper_CI_large_cnt<- exp(2*g_large_cnt + 1.96*2*s_large_cnt)
+lower_CI_large_cnt<- exp(2*g_large_cnt - 1.96*2*s_large_cnt)
+upper_CI_small_wt <- exp(2*g_small_wt + 1.96*2*s_small_wt)
+lower_CI_small_wt <- exp(2*g_small_wt - 1.96*2*s_small_wt)
+upper_CI_small_cnt <-exp(2*g_small_cnt + 1.96*2*s_small_cnt)
+lower_CI_small_cnt <-exp(2*g_small_cnt - 1.96*2*s_small_cnt)
+
+
+upper_CI <- c(upper_CI_large_wt, upper_CI_large_cnt, upper_CI_small_wt, upper_CI_small_cnt)
+lower_CI <- c(lower_CI_large_wt, lower_CI_large_cnt, lower_CI_small_wt,lower_CI_small_cnt)
+
+
+scallop_FPC_table$Upper_CI <- upper_CI
+scallop_FPC_table$Lower_CI <- lower_CI
+
+scallop_FPC_table #ok I changed the haul and gear code to factor... because they are factors,,, and now I have sig results.
+##what just happened? Is this right?
+##qc'ed and it says to apply a FPC to the large scallops. Let's check the simulation method tho on that
+
+```
+These results have this: 
+Category
+<chr>
+FPC
+<dbl>
+Upper_CI
+<dbl>
+Lower_CI
+<dbl>
+large (weight)	0.6787055	0.8872680	0.5201006	
+large(count)	0.6792782	0.9420581	0.4911036	
+small(weight)	0.7365905	1.0567685	0.5147370	
+small(count)	0.7571499	1.2452201	0.4624142	
+
+Says for large apply the FPC. What does the MSE say?
+
+More plots
+```{r}
+ggplot(large_m) + aes(x=bed_name, y=log(cpue_wt+1)) + geom_boxplot()
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1)) + geom_boxplot() #higher hauls have higher cpue
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name) + geom_boxplot()
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name) + geom_point()
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+#hmm. looks like in YAK 4 the new gear definitely fishes better (I think 5 is the new gear)
+
+
+
+ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1)) + geom_boxplot()
+ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) + scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+
+
+#temp?
+ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+```
+
+Residual plots - some possible outliers but no patterns
+```{r}
+##plot resids
+plot(resid(mod1_large_cnt)) #couple of outliers
+plot(resid(mod1_large_wt))
+plot(resid(mod1_small_cnt)) #couple of outliers
+plot(resid(mod1_small_wt))  #up pattern
+
+qqnorm(log(large_m$cpue_wt+1))
+qqnorm(log(small_m$cpue_wt + 1))
+
+```
+
+Kappenman
+```{r}
+#large
+dat <- large_m
+
+  tmp1 = dat %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = dat %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+
+
+kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
+kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
+
+#small
+dat <- small_m
+
+  tmp1 = dat %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = dat %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+
+
+kapp_wt_S1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
+kapp_wt_S2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
+
+
+kapp_wt_L1
+kapp_wt_L2
+kapp_wt_S1
+kapp_wt_S2
+
+```
+Comment: The Kappenman FPC's are lower than the randomized block ANOVA FPC's. Why?
+Kappenman's estimates are more conservative
+
+
+Kappenman's function
+```{r}
+f_kapp_AR <- function(data) {
+    #deleted args from function: ves1, ves2, vessel_name = "vessel"
+  
+  # ensure vessel and cpue columns are properly named
+  #data %>%
+   # rename(vessel = as.name(vessel_name),
+    #       cpue = as.name(cpue_name)) -> data
+  
+  # pivot data to wide format (i.e., in pairs)
+ # data %>%
+    #pivot_wider(names_from = vessel, values_from = cpue_wt) -> data
+  # extract cpue vectors from data
+ # cpue1 = data %>% pull(as.name(ves1)) # standard vessel
+ # cpue2 = data %>% pull(as.name(ves2)) 
+  
+  #alex code
+  tmp1 = data %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = data %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+  
+  # call fishmethods::fpc
+  kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+  #kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4), silent = T)
+  #AR adjusted so that cpue 2 is the first number and cpue 1 is the second number
+  #cpue 2 is for gear type 5 (new dredge)
+  #cpue 1 is for gear type 1(old dredge)
+  
+  # organize results
+  if(class(kapp) == "try-error"){
+    tibble(n = NA,
+           cpue1 = NA,
+           cpue2 = NA,
+           fpc = NA,
+           boot_se = NA,
+           boot_l95 = NA,
+           boot_u95 = NA) -> out
+  } else{
+    kapp %>%
+      as_tibble() %>%
+      rename(n = n1,
+             cpue1 = `mean cpue1`,
+             cpue2 = `mean cpue2`,
+             fpc = FPC,
+             boot_se = Boot_SE,
+             boot_l95 = `Boot_95%_LCI`,
+             boot_u95 = `Boot_95%_UCI`) %>%
+      dplyr::select(n, cpue1, cpue2, fpc, boot_se, boot_l95, boot_u95) -> out
+  }
+    
+  # fix names
+  #names(out)[2] = paste0(ves1, "_cpue")
+  #names(out)[3] = paste0(ves2, "_cpue")
+  
+  # output
+  return(out)
+  
+}
+
+#ok ok, that should be a functional function. f_kapp_AR
+
+f_kapp_AR(data=large_m)
+```
+
+MSE sim Kapp (crap. Do I need to do and MSE sim for ANOVA as well or is kapp enough??... what did Tyler do?)
+```{r}
+#AR adjustments
+f_kapp_mse_sim_AR1 <- function(data, n, method){
+  
+  # pull cpue from data
+  data %>%
+    pull(cpue_wt) -> cpue  
+    
+  # compute parameters of lognormal dist
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
+  var = log(1+(sd(cpue)/mean(cpue))^2) #ah. for the bootstrap. AR.
+  
+  # check pdf
+  #hist(cpue, freq = F)
+  #lines(density(rlnorm(1000, meanlog = mu, sdlog = sqrt(var))), col = 2)
+  
+  cpue_u = NULL
+  cpue_c = NULL
+  mse_u = NULL
+  mse_c = NULL
+  fpd = seq(0.1, 2, 0.1) #AR WHAT IS THIS??
+  for(i in 1:length(fpd)){
+    for(j in 1:200){
+      # simulate cpue standard vessel aka the Homer dredge
+      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
+      # simulate cpue non-standard vessel aka the Kodiak dredge
+      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
+      # estimate FPC
+      fpc <- fpc(cpue1 = hom_sim, cpue2 = kod_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
+      ##CAREFUIL!!  RES_SIM AND SOL_SIM ABOVE NEED TO BE REPLACED WITH WHAT IS MEANINGFOR TO YOUR VESSEL
+      
+      # join vessel cpues to one vector
+      ## uncorrected
+      survey_u = c(hom_sim, kod_sim)
+      ## corrected
+      survey_c = c(hom_sim, (kod_sim * fpc$FPC))  # scale to standard vessel
+      
+      # compute means of uncorrected and corrected data
+      cpue_u[j] = mean(survey_u)
+      cpue_c[j] = mean(survey_c)
+      
+    }
+    mse_u[i] = mean((cpue_u - mean(cpue))^2)
+    mse_c[i] = mean((cpue_c - mean(cpue))^2)
+  }
+  
+  tibble(fpd = fpd,
+         mse_u = mse_u,
+         mse_c = mse_c)
+  
+}
+
+
+### simulation plot function AR
+f_sim_plot <- function(data, fpc){
+  # plot data
+  data %>%
+    pivot_longer(cols=c("mse_u", "mse_c"), names_to = "sim", values_to = "mse") %>%
+    mutate(sim = case_when(sim == "mse_u" ~ "Uncorrected",
+                           sim == "mse_c" ~ "Corrected")) %>%
+    ggplot()+
+    geom_point(aes(x = fpd, y = mse, color = sim), alpha = 0.3)+
+    geom_smooth(aes(x = fpd, y = mse, color = sim), method = "lm",formula = y ~ poly(x, 2), se = F)+
+   # scale_color_manual(values = cb_palette[c(1,3)])+
+    geom_vline(aes(xintercept = fpc), linetype = 2)+ #add in later? PROBS. AR
+    labs(x = "Fishing Power Difference", y = "MSE", color = NULL)+
+    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2)) -> x
+  # save
+ # ggsave(paste0(path_prefix, spp_name, ".png"), plot = x, width = 5, height = 4, units = "in")
+  return(x)
+}
+
+#test
+test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be?
+f_sim_plot(data=test_large, fpc=FPC_large_wt) 
+```
+
+MSE sim ANOVA
+```{r}
+
+```
+
