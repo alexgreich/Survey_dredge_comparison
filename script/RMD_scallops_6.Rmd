@@ -351,7 +351,7 @@ f_kapp_AR <- function(data) {
 f_kapp_AR(data=large_m)
 ```
 
-MSE sim Kapp (crap. Do I need to do and MSE sim for ANOVA as well or is kapp enough??... what did Tyler do?)
+MSE sim Kapp 
 ```{r}
 #AR adjustments
 f_kapp_mse_sim_AR1 <- function(data, n, method){
@@ -425,12 +425,36 @@ f_sim_plot <- function(data, fpc){
 }
 
 #test
-test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be?
-f_sim_plot(data=test_large, fpc=FPC_large_wt) 
+test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be? 48 is the number of hauls (sample size 96)
+f_sim_plot(data=test_large, fpc=FPC_large_wt) #need to chage the fpc to a kapp value, this is the anova output. Kapp value is about 0.84
+
+#kapp
+kapp_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=4)
+f_sim_plot(data=kapp_mse_large, fpc=kapp_wt_L2)
+
+kapp_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=4)
+f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2)
+
 ```
 
 MSE sim ANOVA FPC- see lines 498 on. 
 I do not understand but can edit this  myself
+```{r}
+test_large_MSE_ANOVA<- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2) #now this is an anova
+f_sim_plot(data=test_large_MSE_ANOVA, fpc=FPC_large_wt)
+#oh dang. When n=48,the MSE is small enough where we apply the FPC.
+
+small_MSE_ANOVA <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
+f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt)
+```
+
+Now do this for small scallops too
+```{r}
+
+```
+
+Size comp exploration
+- see liens 398 of sbs_fpc_estimateion.R code
 ```{r}
 
 ```
