@@ -505,4 +505,14 @@ ggplot(specimen)+ aes(x=shell_height, y=count, color=gear_code) +
 ```
 
 
+Formal test between distributions
+```{r}
+library(stats)
+homer_spec <- specimen %>% filter(gear_code==1)
+kodiak_spec <- specimen %>% filter(gear_code==5)
+ks.test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, alternative="two.sided")
+##This test shows us that we cant reject the null hypothesis: that the dredges have the same scallop height distributions
+
+#If y is numeric, a two-sample (Smirnov) test of the null hypothesis that x and y were drawn from the same distribution is performed. 
+```
 
