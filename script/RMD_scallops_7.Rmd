@@ -515,7 +515,20 @@ ks.test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, alternative="two.
 ##This test shows us that we cant reject the null hypothesis: that the dredges have the same scallop height distributions
 
 #If y is numeric, a two-sample (Smirnov) test of the null hypothesis that x and y were drawn from the same distribution is performed. 
+
+
+##CRAP! This is cheatingm I need to weight the shell_heights based on the sample_factor. HOW TO DO THIS
 ```
+Formal test between distributions with the weighted shell_height based on the sample factor.
+How to do this? multiply something? multiply the shell height by the sample factor? Is that legit? How to weight this test??
+Need to find an example of distribution comparison when there are weights involved
+What does Tyler do? There's weights involved there.
+```{r}
+
+```
+
+
+
 # Problem statement
 A new dredge was needed for the annual weathervane scallop survey, but the original dredge manufacturing details was not documented. It was decided to use a dredge designed and thoroughly tested in the Eastern United States. For the purposes of this project, the old dredge is referred to as the Homer dredge and the new dredge is referenced as the Kodiak dredge. Because the yearly weathervane scallop survey is a time series, there was need for a fishing power comparison between Homer and Kodiak dredges. {RE-WRITE AND COMPARE TO ALYSSA SUMMARY!!}
 
@@ -552,6 +565,7 @@ The confidence intervals were calculated as:
  {Talk about other studies, the first ones that use MSE (Munro 1998 and other), the ones that use the FPC CI's and also MSE (Tyler's paper and one other) and that you will follow thier example}
 
 ### Catch distribution comparison
+Sample distributions of the Homer and Kodiak dredges were compared using the Kolmogorov-smirnov test (CITE)
 
 
 # Results
