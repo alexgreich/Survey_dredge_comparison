@@ -6,6 +6,8 @@ output: html_document
 ---
 WARNNG: I am gettign diff #'s than initially which is extremely concerning... anova has 5 as standard adn 1 is changed. That;s what I want but idk why that happened.
 
+WARNING: DATa WRANGLING NEEDS QC!!
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -451,14 +453,56 @@ f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt)
 #this one is confusing. RIGHT ON THAT BOUNDARY! #oh but we do not acceot due to the CI's overlapping with 1 (the ANOVA CI's)
 ```
 
-Now do this for count (large and small) cpue too
+Now do this for count (large and small) cpue too. The prior analysis was for weight
 ```{r}
 
 ```
 
-Size comp exploration
+
+# Size comp exploration
 - see liens 398 of sbs_fpc_estimateion.R code
-```{r}
 
+Graph
+```{r}
+#ggplot(specimen) + aes(x=shell_height, y=count) +geom_point() + facet_wrap(~gear_code_description)
+#hist(specimen$shell_height)
+library(viridis)
+
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group = factor(gear_code)) +geom_density()+
+    theme_minimal() #
+
+
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group = factor(gear_code)) +geom_boxplot()+
+    theme_minimal() 
+
+ggplot(specimen) + aes(y=shell_height, x=haul, color=factor(gear_code), group = factor(gear_code), size=sample_factor) +geom_point(alpha=0.7, shape=1)+
+    theme_minimal() + scale_color_brewer(type = "qual")
+
+ggplot(specimen) + aes(y=shell_height, x=haul, color=sample_factor) +geom_point(alpha=0.7, shape=1, size=5)+
+    theme_minimal() + scale_color_viridis_c() + facet_wrap(~gear_code)
+
+hist(specimen$sample_factor) #so lots of low numbers for the sample factor. Many hauls had few scallops.
 ```
+
+More size comp graphs
+- this one is based on Tyler's code on line 410
+```{r}
+library(viridis)
+ggplot(specimen)+ aes(x=shell_height, y=sample_factor, color=gear_code) + #IDK if this plot is useful at all
+    geom_line()+
+    scale_color_viridis()+
+    theme_minimal()
+
+ggplot(specimen)+ aes(x=shell_height, y=sample_factor, color=as.factor(gear_code)) + #this plot is good
+    geom_point(size=3, alpha=0.6)+
+    scale_color_viridis_d()+
+    theme_minimal()
+
+ggplot(specimen)+ aes(x=shell_height, y=count, color=gear_code) + 
+    geom_line()+
+    scale_color_viridis()
+    
+```
+
+
 
