@@ -528,7 +528,28 @@ To determine if a fishing power correction (FPC) is needed between the Homer dre
 
 ### Fishing power correction (FPC) calculation
 
-The data was separated into large (MEASUREMENT) and small scallops (MEASUREMENT). This is because of (BIOLOGICAL REASON). CPUE was then calculated by dividing the weight or number of scallops caught by the area of the tow. 
+The data was separated into large (MEASUREMENT) and small (MEASUREMETN) categories of scallops. This is because of (BIOLOGICAL REASON). CPUE was then calculated by dividing the weight {or number of scallops caught} by the area of the tow:
+
+(CPUE EQUATION)
+
+A randomized block ANOVA {ANCOVA??} was then performed on the data, with indivdual hauls as the randomized blocks (WERID WORDING). The CPUE was log-transformed to prevent negative fitted values. The equation is:
+
+{EQUATION} (same as the Tyler paper)
+
+Where __ represents the cpue, __ is the grand mean {aka intercept}, _g_ is the gear effect of the Homer or Kodiak dredge, __ is the haul effect, and __ represents the error with a normal distribution. This was conducted separately for large and small categories of scallops.
+
+Fishing power correction was calculated as:
+
+{EQUATION; see Tyler paper page 4}
+
+where (see Tyler paper) and s^2 is the variance parameter estimate of _g_.
+
+The confidence intervals were calculated as:
+
+{EQUATION; see Tyler paper page 4}
+
+### Mean square error
+ {Talk about other studies, the first ones that use MSE (Munro 1998 and other), the ones that use the FPC CI's and also MSE (Tyler's paper and one other) and that you will follow thier example}
 
 ### Catch distribution comparison
 
