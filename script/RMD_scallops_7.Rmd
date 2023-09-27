@@ -555,8 +555,34 @@ The confidence intervals were calculated as:
 
 
 # Results
-## Large scallops: weight
-## Large scallops: count
+## Fishing power correction (FPC): to apply or not apply
+### Large scallops: weight
+### Large scallops: count - DELETE?
+
+TABLE
 
 ## Small scallops: weight
-## Small scallops: count
+## Small scallops: count -DELETE?
+
+
+
+# Discussion
+
+# Conclusion
+
+# Next steps for the working draft analysis
+Add in the caveats. What survey complications can I quantitatively add into the analysis? Which ones am I unable to add, and thus will remain caveats to the results.
+
+# Draft list of Figures
+- map of study area
+- Map of hauls (potentially combine with formet)
+--might take multiple figures
+- Dredge pics/diagrams of both Homer and Kodiak dredges
+- Catch density comparisons for both L and S scallops
+_ FPC graph with CI's? (see Tyler paper fig 10)
+- MSE simulation graphs (at least for L scallops)
+- the theoretical FPD (appendix 1 from tyler paper)
+
+# Draft list of tables
+- Dredge dimension comparisons
+
