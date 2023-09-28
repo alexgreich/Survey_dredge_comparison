@@ -482,6 +482,9 @@ ggplot(specimen) + aes(y=shell_height, x=haul, color=factor(gear_code), group = 
 ggplot(specimen) + aes(y=shell_height, x=haul, color=sample_factor) +geom_point(alpha=0.7, shape=1, size=5)+
     theme_minimal() + scale_color_viridis_c() + facet_wrap(~gear_code)
 
+ggplot(specimen) + aes(y=shell_height, x=haul, color=sample_factor, size=sample_factor) +geom_point(alpha=0.5, shape=1)+
+    theme_minimal() + scale_color_viridis_c() + facet_wrap(~gear_code)
+
 hist(specimen$sample_factor) #so lots of low numbers for the sample factor. Many hauls had few scallops.
 ```
 
@@ -568,6 +571,12 @@ ks_weighted_result <- ks_weighted(vector_1=homer_spec$shell_height, vector_2=kod
 
 ks_weighted_result #ok. this is very weird
 summary(ks_weighted_result)
+
+
+ks_weighted_result_0.1 <- ks_weighted(vector_1=homer_spec$shell_height, vector_2=kodiak_spec$shell_height, weights_1=homer_spec$sample_factor/100, weights_2=kodiak_spec$sample_factor/100)
+
+ks_weighted_result
+ks_weighted_result_0.1
 ```
 A different approach to the weighted ks test
 ```{r}
@@ -575,10 +584,36 @@ library(Ecume)
 ks_weighted_result_2 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0.05, w_x=homer_spec$sample_factor, w_y=kodiak_spec$sample_factor)
 
 ks_weighted_result_2 #hmm. Sayign the dredges DO have different distributions. Maybe the last attempt isn't off.
+ks_weighted_result_2$statistic
 summary(ks_weighted_result_2)
+
+
+ks_weighted_result_3 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0.05, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #this one converts the sample_factor to percentages for the weight calc. Let's see if it yields different results
+
+ks_weighted_result_3
+
+#oh, threshold is the effect size. I need an effect size to indicate 95% CI
+
+
+ks_weighted_result_4 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #testing H0 D=0?
+
+ks_weighted_result_4 #says they are different
 ```
+Do I need to formally test more than two distributions? MY scallpp data comes from a multivariate distribution?
+
 
 How to graph something like this? The distributions with weights?- it's google time
+```{r}
+ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor/100))
+ggplot(specimen) + aes(x=shell_height, weight= sample_factor/100) + geom_density() #identical
+ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor)) #identical
+ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor)) + facet_wrap(~gear_code, ncol=1) +theme_minimal() #final density plot with weights
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal() #final density plot with weights
+
+ggplot(specimen) + aes(x=shell_height) +geom_density() + facet_wrap(~gear_code, ncol=1) + theme_minimal() #density plot without weights
+```
+
+Based on the graphs, I think I should do separate weighted KS tests. one for small scallops and one for large scallops.
 ```{r}
 
 ```
