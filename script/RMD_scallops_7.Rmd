@@ -506,7 +506,7 @@ ggplot(specimen)+ aes(x=shell_height, y=count, color=gear_code) +
 ```
 
 
-Formal test between distributions
+Formal test between distributions (unweighted)
 ```{r}
 library(stats)
 homer_spec <- specimen %>% filter(gear_code==1)
@@ -524,9 +524,64 @@ How to do this? multiply something? multiply the shell height by the sample fact
 Need to find an example of distribution comparison when there are weights involved
 What does Tyler do? There's weights involved there.
 ```{r}
+library("spatstat")
+?ewcdf
 
+#See Numerical Methods of Statistics by Monohan, p. 334 in 1E and p. 358 in 2E
+#thank you stackoverflow(https://stackoverflow.com/questions/40044375/how-to-calculate-the-kolmogorov-smirnov-statistic-between-two-weighted-samples):
+ks_weighted <- function(vector_1,vector_2,weights_1,weights_2){
+    F_vec_1 <- ewcdf(vector_1, weights = weights_1, normalise=FALSE)
+    F_vec_2 <- ewcdf(vector_2, weights = weights_2, normalise=FALSE)
+    xw <- c(vector_1,vector_2) 
+    d <- max(abs(F_vec_1(xw) - F_vec_2(xw)))
+
+    ## P-VALUE with NORMAL SAMPLE 
+    # n_vector_1 <- length(vector_1)                                                           
+    # n_vector_2<- length(vector_2)        
+    # n <- n_vector_1 * n_vector_2/(n_vector_1 + n_vector_2)
+
+    # P-VALUE EFFECTIVE SAMPLE SIZE as suggested by Monahan
+    n_vector_1 <- sum(weights_1)^2/sum(weights_1^2)
+    n_vector_2 <- sum(weights_2)^2/sum(weights_2^2)
+    n <- n_vector_1 * n_vector_2/(n_vector_1 + n_vector_2)
+
+
+    pkstwo <- function(x, tol = 1e-06) {
+                if (is.numeric(x)) 
+                    x <- as.double(x)
+                else stop("argument 'x' must be numeric")
+                p <- rep(0, length(x))
+                p[is.na(x)] <- NA
+                IND <- which(!is.na(x) & (x > 0))
+                if (length(IND)) 
+                    p[IND] <- .Call(stats:::C_pKS2, p = x[IND], tol)
+                p
+            }
+
+    pval <- 1 - pkstwo(sqrt(n) * d)
+
+    out <- c(KS_Stat=d, P_value=pval)
+    return(out)
+}
+
+ks_weighted_result <- ks_weighted(vector_1=homer_spec$shell_height, vector_2=kodiak_spec$shell_height, weights_1=homer_spec$sample_factor, weights_2=kodiak_spec$sample_factor)
+
+ks_weighted_result #ok. this is very weird
+summary(ks_weighted_result)
+```
+A different approach to the weighted ks test
+```{r}
+library(Ecume)
+ks_weighted_result_2 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0.05, w_x=homer_spec$sample_factor, w_y=kodiak_spec$sample_factor)
+
+ks_weighted_result_2 #hmm. Sayign the dredges DO have different distributions. Maybe the last attempt isn't off.
+summary(ks_weighted_result_2)
 ```
 
+How to graph something like this? The distributions with weights?- it's google time
+```{r}
+
+```
 
 
 # Problem statement
