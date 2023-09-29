@@ -597,7 +597,7 @@ ks_weighted_result_3
 
 ks_weighted_result_4 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #testing H0 D=0?
 
-ks_weighted_result_4 #says they are different
+ks_weighted_result_4 #says do not reject H0, p=.99
 ```
 Do I need to formally test more than two distributions? MY scallpp data comes from a multivariate distribution?
 
@@ -615,7 +615,26 @@ ggplot(specimen) + aes(x=shell_height) +geom_density() + facet_wrap(~gear_code, 
 
 Based on the graphs, I think I should do separate weighted KS tests. one for small scallops and one for large scallops.
 ```{r}
+large_spec <- specimen %>% filter(samp_grp == 1)
+small_spec <- specimen %>% filter(samp_grp == 2)
 
+ggplot(large_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal()
+
+ggplot(small_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal()
+
+#can the KS test be used where the distribution is... unconventional? (as it is in the small spec)
+homer_spec_l <- large_spec %>% filter(gear_code==1)
+kodiak_spec_l <- large_spec %>% filter(gear_code==5)
+
+homer_spec_s <- small_spec %>% filter(gear_code==1)
+kodiak_spec_s <- small_spec %>% filter(gear_code==5)
+
+ks_large <-Ecume::ks_test(x=homer_spec_l$shell_height, y=kodiak_spec_l$shell_height, thresh= 0, w_x=(homer_spec_l$sample_factor/100), w_y=(kodiak_spec_l$sample_factor/100)) #should thresh be 0?
+
+ks_small <- Ecume::ks_test(x=homer_spec_s$shell_height, y=kodiak_spec_s$shell_height, thresh= 0, w_x=(homer_spec_s$sample_factor/100), w_y=(kodiak_spec_s$sample_factor/100))
+
+ks_large #do not reject H0, p=.99
+ks_small #do not reject H0, p=0.19
 ```
 
 
