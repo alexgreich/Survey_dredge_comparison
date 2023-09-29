@@ -609,6 +609,8 @@ ggplot(specimen) + aes(x=shell_height, weight= sample_factor/100) + geom_density
 ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor)) #identical
 ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor)) + facet_wrap(~gear_code, ncol=1) +theme_minimal() #final density plot with weights
 ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal() #final density plot with weights
+#unweighted plot below
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density() +theme_minimal()
 
 ggplot(specimen) + aes(x=shell_height) +geom_density() + facet_wrap(~gear_code, ncol=1) + theme_minimal() #density plot without weights
 ```
@@ -635,6 +637,29 @@ ks_small <- Ecume::ks_test(x=homer_spec_s$shell_height, y=kodiak_spec_s$shell_he
 
 ks_large #do not reject H0, p=.99
 ks_small #do not reject H0, p=0.19
+```
+
+hIST
+```{r}
+#density
+ggplot(large_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal()
+
+ggplot(small_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal()
+
+#histogram
+
+ggplot(large_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_histogram(aes(weight=sample_factor)) +theme_minimal() + facet_wrap(~gear_code, ncol=1)
+
+ggplot(large_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(gear_code)) + geom_histogram(aes(weight=sample_factor), position="jitter", alpha=0.5) +theme_minimal()
+
+
+ggplot(small_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_freqpoly(aes(weight=sample_factor)) +theme_minimal()
+
+ggplot(small_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_histogram(aes(weight=sample_factor)) +theme_minimal() + facet_wrap(~gear_code, ncol=1)
+
+ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(gear_code)) + geom_histogram(aes(weight=sample_factor), position="jitter", alpha=0.5) +theme_minimal()
+
+#ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(gear_code)) + geom_histogram(position="jitter", alpha=0.5) +theme_minimal() #try with no weight
 ```
 
 
