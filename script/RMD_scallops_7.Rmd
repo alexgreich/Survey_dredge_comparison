@@ -4,9 +4,11 @@ author: "Alex Reich"
 date: "2023-09-27"
 output: html_document
 ---
-WARNNG: I am gettign diff #'s than initially which is extremely concerning... anova has 5 as standard adn 1 is changed. That;s what I want but idk why that happened.
 
-WARNING: DATa WRANGLING NEEDS QC!!
+WARNING: DATa WRANGLING NEEDS QC!! - done 10/02/23
+
+Tyler Q: Am I correcting the new dredge to the old dredge or the old dredge to the new dredge?
+- this is set up: new corrected to old. Can chage the factor order of gear_code to make it old corrected to new.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -37,15 +39,15 @@ Data wrangle.
 ```{r}
 # join logbook and catch in a way that preserves zero catches
 expand_grid(logbook,
-            distinct(transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #why did we do this part?
-  left_join(catch_raw) %>%
+            distinct(transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #expand logbook to all catch types
+  left_join(catch_raw) %>% #join with the catch.This connects catch vales to gear_code id.
   # fill in zero catches
   replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
   # filter for scallops
   filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
   
 
-# cpue will be samp_wt (or count) / area_swept_sqnm
+# cpue will be samp_wt (or count) / area_swept_sqnm. This code is calculating CPUE for both weight and number of scallops
 catch_cpue <- catch %>% 
     mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
            cpue_wt = samp_wt/area_swept_sqnm)
@@ -85,12 +87,12 @@ small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
 ##calculate the grand mean in both datasets
 large_m <- large_2 %>%
     mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
-           gear_code = factor(gear_code), haul = factor(haul))
+           gear_code = factor(gear_code), haul = factor(haul))  #levels=c(1,5) for gear_code if looking to correct old to new. Right now this corrects new to old
     
 
 small_m <- small_2 %>%
     mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
-           gear_code = factor(gear_code), haul = factor(haul))
+           gear_code = factor(gear_code), haul = factor(haul)) #levels=c(1,5) if looking to correct old to new. Right now this corrects new to old
 
 ```
 
@@ -128,7 +130,7 @@ mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
 mod1_small_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=small_m)
 mod1_small_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
 
-#based on the summary tables, gear_code, which is the two dredges, does not matter.
+#summary
 sum_large_wt <- summary(mod1_large_wt)
 sum_large_cnt <- summary(mod1_large_cnt)
 sum_small_wt <- summary(mod1_small_wt)
@@ -231,7 +233,7 @@ ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=fa
     theme_cowplot()
 ```
 
-Residual plots - some possible outliers but no patterns
+Residual plots - some possible outliers but no patterns. Normality fails.
 ```{r}
 ##plot resids
 plot(resid(mod1_large_cnt)) #couple of outliers
@@ -239,9 +241,24 @@ plot(resid(mod1_large_wt))
 plot(resid(mod1_small_cnt)) #couple of outliers
 plot(resid(mod1_small_wt))  #up pattern
 
+
 qqnorm(log(large_m$cpue_wt+1))
 qqnorm(log(small_m$cpue_wt + 1))
 
+#formal normality test
+shapiro.test((large_m$cpue_wt+1))
+shapiro.test((small_m$cpue_wt+1))
+##both fail the formal normality test...
+#hist(log(large_m$cpue_wt+1))
+hist(log(large$cpue_wt+1))
+
+
+
+#plot outliers
+plot(mod1_large_wt) #21 and 22 appear to be outliers, This is haul #29. Kodiak caught 2, homer caught 0.
+plot(mod1_small_wt) #24, 35, 36, and 23 are outliers. These are hauls 41(indices 23 and 24) and 71(indices 35 and 36)
+plot(mod1_large_cnt)
+plot(mod1_small_cnt)
 ```
 
 Kappenman
