@@ -246,8 +246,8 @@ qqnorm(log(large_m$cpue_wt+1))
 qqnorm(log(small_m$cpue_wt + 1))
 
 #formal normality test
-shapiro.test((large_m$cpue_wt+1))
-shapiro.test((small_m$cpue_wt+1))
+shapiro.test(log(large_m$cpue_wt+1))
+shapiro.test(log(small_m$cpue_wt+1))
 ##both fail the formal normality test...
 #hist(log(large_m$cpue_wt+1))
 hist(log(large$cpue_wt+1))
@@ -256,10 +256,46 @@ hist(log(large$cpue_wt+1))
 
 #plot outliers
 plot(mod1_large_wt) #21 and 22 appear to be outliers, This is haul #29. Kodiak caught 2, homer caught 0.
-plot(mod1_small_wt) #24, 35, 36, and 23 are outliers. These are hauls 41(indices 23 and 24) and 71(indices 35 and 36)
+plot(mod1_small_wt) #24, 35, 36, and 23 are outliers. These are hauls 41(indices 23 and 24; kodiak caught 0) and 71(indices 35 and 36; homer caught 0)
 plot(mod1_large_cnt)
 plot(mod1_small_cnt)
+
+#what if I remove the outliers?
+no_outliers_l <- large_m[-c(21,22),]
+no_outliers_s <- small_m[-c(23,24,35,36),]
+
+shapiro.test(log(no_outliers_l$cpue_wt+1))
+#fails normality test
+shapiro.test(log(no_outliers_s$cpue_wt+1))
+#passes normaliy test, barely
+
+#do results change if I remove the outliers?
+mod1_large_wt_nooutliers <- lm(log(cpue_wt+1) ~ gear_code + haul, data=no_outliers_l)
+sum_o<-summary(mod1_large_wt_nooutliers)
+
+s_large_wt_o <- sum_o$coefficients[2,2]  #SE for large scallops
+g_large_wt_o <- sum_o$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_wt_o <- exp(2*g_large_wt_o*(1+(0.5*(s_large_wt_o^2)))) 
+
+upper_CI_large_wt_no_outliers <- exp(2*g_large_wt_o + 1.96*2*s_large_wt_o)
+lower_CI_large_wt_no_outliers <- exp(2*g_large_wt_o - 1.96*2*s_large_wt_o)
+
+FPC_large_wt_o
+upper_CI_large_wt_no_outliers
+lower_CI_large_wt_no_outliers #same results, apply FPC. More precision though
+
 ```
+
+Aside, would another dist work better?
+```{r}
+library(MASS)
+fit_lognorm <- fitdistr(large_m$cpue_wt+1, "lognormal")
+fit_norm <- fitdistr(large_m$cpue_wt, "normal")
+
+
+```
+
 
 Kappenman
 ```{r}
