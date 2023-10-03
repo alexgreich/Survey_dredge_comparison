@@ -1,14 +1,12 @@
 ---
-title: "RMD_scallops_7"
+title: "RMD_scallops_7_presentable"
 author: "Alex Reich"
 date: "2023-09-27"
 output: html_document
 ---
+This version is adjusted so the FPC will be to correct Kodiak to Homer values, since most of the time series was collected by the Homer dredge.
 
-WARNING: DATa WRANGLING NEEDS QC!! - done 10/02/23
-
-Tyler Q: Am I correcting the new dredge to the old dredge or the old dredge to the new dredge?
-- this is set up: new corrected to old. Can chage the factor order of gear_code to make it old corrected to new.
+Older version with a mix of this: RMD_scallops_7.RMD
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -18,6 +16,8 @@ library(RColorBrewer)
 library(cowplot)
 library(fishmethods)
 library(viridis)
+
+set.seed(123)
 ```
 
 
@@ -86,13 +86,11 @@ small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
     ungroup()
 ##calculate the grand mean in both datasets
 large_m <- large_2 %>%
-    mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
-           gear_code = base::factor(gear_code, levels=c("1","5")), haul = factor(haul))  #levels=c(1,5) for gear_code if looking to correct old to new. Right now this corrects new to old
+           mutate(gear_code = factor(gear_code), haul = factor(haul))  #levels=c(1,5) for gear_code if looking to correct old to new. Right now this corrects new to old
     
 
 small_m <- small_2 %>%
-    mutate(grand_mean_cpue_wt = mean(cpue_wt), grand_mean_cpue_cnt = mean(cpue_cnt),
-           gear_code = base::factor(gear_code, levels=c("1", "5")), haul = factor(haul)) #levels=c(1,5) if looking to correct old to new. Right now this corrects new to old
+           mutate(gear_code = factor(gear_code), haul = factor(haul)) #levels=c(1,5) if looking to correct old to new. Right now this corrects new to old
 
 ```
 
@@ -121,6 +119,8 @@ hist(log(large$cpue_cnt))
 ```{r}
 #log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
 ##large scallops
+#large_m$gear_code <- relevel(large_m$gear_code, ref="5")
+
 mod1_large_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m)
 mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
 #mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
@@ -209,39 +209,8 @@ large(count)	0.6792782	0.9420581	0.4911036
 small(weight)	0.7365905	1.0567685	0.5147370	
 small(count)	0.7571499	1.2452201	0.4624142	
 
-This is not always consistent. Sometimes it is this: Homer changed to kodiak. WE probs want to change kodaik to homer for less uncertainty in the long term? BEcause we have more kodiak
-
-
-Category
-<chr>
-FPC
-<dbl>
-Upper_CI
-<dbl>
-Lower_CI
-<dbl>
-large (weight)	2.182607	3.696794	1.2702534	
-large(count)	2.184596	4.146233	1.1267943	
-small(weight)	1.857320	3.774238	0.8954479	
-small(count)	1.767572	4.676680	0.6449228
-
-
-When levels are specified:
-
-Category
-<chr>
-FPC
-<dbl>
-Upper_CI
-<dbl>
-Lower_CI
-<dbl>
-large (weight)	0.4581677	0.7872445	0.2705047	
-large(count)	0.4577505	0.8874734	0.2411828	
-small(weight)	0.5384101	1.1167596	0.2649541	
-small(count)	0.5657479	1.5505732	0.2138269	
-
-Oh. OH! 10/03/23. The 0.67 answer is incorrect. It's when lm (erroneously) defaults to gear_code 5 as default with gear_code 1 as the chage, making the FPC calculation incorrect (I THINK). I need to set levels when I create the gear code factor to keep this consistent;
+I have been having consistency issues with lm. Right now it is using gear_type 5 as base and gear_type 1 as change. Sometimes it does the opposite. Not sure why
+Says for large apply the FPC. What does the MSE say?
 
 More plots
 ```{r}
@@ -318,15 +287,11 @@ upper_CI_large_wt_no_outliers
 lower_CI_large_wt_no_outliers #same results, apply FPC. More precision though
 
 ```
+Large scallops: normality fails
+Large scallops with outliers removed: normality fails
 
-Aside, would another dist work better?
-```{r}
-library(MASS)
-fit_lognorm <- fitdistr(large_m$cpue_wt+1, "lognormal")
-fit_norm <- fitdistr(large_m$cpue_wt, "normal")
-
-
-```
+Small scalops: normality fails
+Small scallops with outliers removed: normality barely passes
 
 
 Kappenman
@@ -342,11 +307,11 @@ dat <- large_m
 
 
 kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
-kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
-ANOVA_fpc_l_wt_cheating <- fpc(cpue1, cpue2, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+#kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
+ANOVA_fpc_l_wt_cheating <- fpc(cpue2, cpue1, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 
-ANOVA_fpc_l_wt_cheating #ok. the shortcut method seems identical to the lm method
-FPC_large_wt
+ANOVA_fpc_l_wt_cheating #ok. the shortcut method seems identical to the lm method 
+FPC_large_wt #the inverse, in this case
 
 #small
 dat <- small_m
@@ -460,7 +425,7 @@ f_kapp_mse_sim_AR1 <- function(data, n, method){
   cpue_c = NULL
   mse_u = NULL
   mse_c = NULL
-  fpd = seq(0.1, 2, 0.1) #AR WHAT IS THIS??
+  fpd = seq(0.1, 2, 0.1) 
   for(i in 1:length(fpd)){
     for(j in 1:200){
       # simulate cpue standard vessel aka the Homer dredge
@@ -574,27 +539,21 @@ hist(specimen$sample_factor) #so lots of low numbers for the sample factor. Many
 ```
 
 More size comp graphs
-- this one is based on Tyler's code on line 410
 ```{r}
 library(viridis)
-ggplot(specimen)+ aes(x=shell_height, y=sample_factor, color=gear_code) + #IDK if this plot is useful at all
-    geom_line()+
-    scale_color_viridis()+
-    theme_minimal()
 
 ggplot(specimen)+ aes(x=shell_height, y=sample_factor, color=as.factor(gear_code)) + #this plot is good
-    geom_point(size=3, alpha=0.6)+
+    geom_point(size=3, alpha=0.3)+
     scale_color_viridis_d()+
     theme_minimal()
 
-ggplot(specimen)+ aes(x=shell_height, y=count, color=gear_code) + 
-    geom_line()+
-    scale_color_viridis()
+
+
     
 ```
 
 
-Formal test between distributions (unweighted)
+Formal test between distributions (unweighted). This will be deleted, as we'll want to use the sample_factor for the weight
 ```{r}
 library(stats)
 homer_spec <- specimen %>% filter(gear_code==1)
@@ -608,9 +567,7 @@ ks.test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, alternative="two.
 ##CRAP! This is cheatingm I need to weight the shell_heights based on the sample_factor. HOW TO DO THIS
 ```
 Formal test between distributions with the weighted shell_height based on the sample factor.
-How to do this? multiply something? multiply the shell height by the sample factor? Is that legit? How to weight this test??
-Need to find an example of distribution comparison when there are weights involved
-What does Tyler do? There's weights involved there.
+A non-QC'ed Attempt from stackexchange:
 ```{r}
 library("spatstat")
 ?ewcdf
@@ -666,28 +623,14 @@ ks_weighted_result_0.1
 A different approach to the weighted ks test
 ```{r}
 library(Ecume)
-ks_weighted_result_2 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0.05, w_x=homer_spec$sample_factor, w_y=kodiak_spec$sample_factor)
-
-ks_weighted_result_2 #hmm. Sayign the dredges DO have different distributions. Maybe the last attempt isn't off.
-ks_weighted_result_2$statistic
-summary(ks_weighted_result_2)
-
-
-ks_weighted_result_3 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0.05, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #this one converts the sample_factor to percentages for the weight calc. Let's see if it yields different results
-
-ks_weighted_result_3
-
-#oh, threshold is the effect size. I need an effect size to indicate 95% CI
-
 
 ks_weighted_result_4 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #testing H0 D=0?
 
 ks_weighted_result_4 #says do not reject H0, p=.99
 ```
-Do I need to formally test more than two distributions? MY scallpp data comes from a multivariate distribution?
 
 
-How to graph something like this? The distributions with weights?- it's google time
+How to graph something like this? The distributions with weights?
 ```{r}
 ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor/100))
 ggplot(specimen) + aes(x=shell_height, weight= sample_factor/100) + geom_density() #identical
@@ -746,6 +689,10 @@ ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(ge
 
 #ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(gear_code)) + geom_histogram(position="jitter", alpha=0.5) +theme_minimal() #try with no weight
 ```
+
+
+BELOW IS THE DRAFT WRITE UP
+SAVE THIS WORK FOR LATER
 
 
 # Problem statement
