@@ -4,10 +4,23 @@ author: "Alex Reich"
 date: "2023-09-27"
 output: html_document
 ---
-This version is adjusted so the FPC will be to correct Kodiak to Homer values, since most of the time series was collected by the Homer dredge.
 
-Older version with a mix of this: RMD_scallops_7.RMD
+# Dredge comparison study
 
+
+## Take-away message/Abstract
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. STATE RESULTS FOR ANOVA AND MSE
+
+I also tried the KAppenman's method. It had more conservative results. STATE RESULTS FOR KAPP AND MSE. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted, which is undesirable here. STATE KAPPENMAN RESULTS.
+
+Normality: does not look terrible terrible when graphed but according to the Shaprio-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk 
+
+In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
+
+
+## Analysis/code
+
+Load packages
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -34,8 +47,8 @@ catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchC
 specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
 ```
 
-Data wrangle.
 
+Data wrangle.
 ```{r}
 # join logbook and catch in a way that preserves zero catches
 expand_grid(logbook,
@@ -70,11 +83,6 @@ large <- catch_cpue %>% filter(samp_grp == 1)
 small <- catch_cpue %>% filter(samp_grp == 2)
 
 ##Remove where both hauls are 0.
-##can do a for loop: for i in 1:haul{ if x==0 and y==0, (record the number of i in a vector )} 
-###THEN: delete the vector
-###try it in dplyr?
-####summarize: if x=0 and y=0 within a haul number
-##(I can also do this in excel in about 2 seconds...)
 large_2 <- large %>% #no change
     group_by(haul) %>%
     filter(!all(cpue_cnt == 0)) %>%
@@ -84,13 +92,14 @@ small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
     group_by(haul) %>%
     filter(!all(cpue_cnt == 0)) %>%
     ungroup()
-##calculate the grand mean in both datasets
+
+#code the factors as factors
 large_m <- large_2 %>%
-           mutate(gear_code = factor(gear_code), haul = factor(haul))  #levels=c(1,5) for gear_code if looking to correct old to new. Right now this corrects new to old
+           mutate(gear_code = factor(gear_code), haul = factor(haul))  #levels=c(1,5) ? Specify levels in factors?
     
 
 small_m <- small_2 %>%
-           mutate(gear_code = factor(gear_code), haul = factor(haul)) #levels=c(1,5) if looking to correct old to new. Right now this corrects new to old
+           mutate(gear_code = factor(gear_code), haul = factor(haul)) #levels=c(1,5) ?
 
 ```
 
@@ -100,7 +109,7 @@ Exploratory graphs
 #any way, let's graph the data
 ##separate into large and small scallops
 
-hist(log(large$cpue_wt+1))
+hist(log(large$cpue_wt+1)) #try smaller bins?
 hist(large$cpue_wt)
 hist(small$cpue_wt)
 hist(log(small$cpue_wt))
@@ -119,7 +128,7 @@ hist(log(large$cpue_cnt))
 ```{r}
 #log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
 ##large scallops
-#large_m$gear_code <- relevel(large_m$gear_code, ref="5")
+#large_m$gear_code <- relevel(large_m$gear_code, ref="5") #triedd this, decided no
 
 mod1_large_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m)
 mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
@@ -190,9 +199,7 @@ lower_CI <- c(lower_CI_large_wt, lower_CI_large_cnt, lower_CI_small_wt,lower_CI_
 scallop_FPC_table$Upper_CI <- upper_CI
 scallop_FPC_table$Lower_CI <- lower_CI
 
-scallop_FPC_table #ok I changed the haul and gear code to factor... because they are factors,,, and now I have sig results.
-##what just happened? Is this right?
-##qc'ed and it says to apply a FPC to the large scallops. Let's check the simulation method tho on that
+scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MSE support this?
 
 ```
 These results have this: 
@@ -210,6 +217,7 @@ small(weight)	0.7365905	1.0567685	0.5147370
 small(count)	0.7571499	1.2452201	0.4624142	
 
 I have been having consistency issues with lm. Right now it is using gear_type 5 as base and gear_type 1 as change. Sometimes it does the opposite. Not sure why
+
 Says for large apply the FPC. What does the MSE say?
 
 More plots
