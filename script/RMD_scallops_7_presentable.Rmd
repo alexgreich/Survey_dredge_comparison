@@ -24,10 +24,9 @@ I also tried the Kappenman's method. It had more conservative results. FPC was 0
 In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
 
 Results after outliers are removed:
-- a higher precision but does not change results for the randomized block ANOVA
+- a higher precision. See table. After removing the outliers, both small and large scallops have confidence intervals outside of 1.
 
-NEXT:
--what are my ANOVA results when I remove the outliers?
+
 
 
 ## Analysis/code
@@ -337,6 +336,23 @@ FPC_large_wt_o
 upper_CI_large_wt_no_outliers
 lower_CI_large_wt_no_outliers #same results, apply FPC. More precision though
 
+#small no outliers
+mod1_small_wt_nooutliers  <- lm(log(cpue_wt+1) ~ gear_code + haul, data=no_outliers_s)
+sum_o_s<-summary(mod1_small_wt_nooutliers)
+
+s_small_wt_o <- sum_o_s$coefficients[2,2]  #SE for large scallops
+g_small_wt_o <- sum_o_s$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_small_wt_o <- exp(2*g_small_wt_o*(1+(0.5*(s_small_wt_o^2)))) 
+
+upper_CI_small_wt_no_outliers <- exp(2*g_small_wt_o + 1.96*2*s_small_wt_o)
+lower_CI_small_wt_no_outliers <- exp(2*g_small_wt_o - 1.96*2*s_small_wt_o)
+
+scallop_FPC_table_2 <- rbind(scallop_FPC_table, c("large no outliers (weight)", FPC_large_wt_o, upper_CI_large_wt_no_outliers, lower_CI_large_wt_no_outliers))
+
+scallop_FPC_table_3 <- rbind(scallop_FPC_table_2, c("small no outliers (weight)", FPC_small_wt_o, upper_CI_small_wt_no_outliers, lower_CI_small_wt_no_outliers))
+
+scallop_FPC_table_3
 ```
 Large scallops: normality fails
 Large scallops with outliers removed: normality fails
@@ -345,22 +361,25 @@ Small scalops: normality fails
 Small scallops with outliers removed: normality barely passes
 
 
+
+########################################
 Kappenman #THIS IS IT! THE CHANGE HAPPENS HERE!! Figure out why lm opperates differently before and after this code block
 -I will try removing all things unnecessary
 ```{r}
 #large
-#dat <- large_m
 
- # tmp1 <- dat %>% filter(gear_code==1)
- # a <- tmp1$cpue_wt
+#sigh. Does not work below.
+#fpc does not work the same as my randomized bloc anova and I am confused as to why. See tyler code. 
+dat<- large_m %>% arrange(haul, gear_code)
+
+ tmp1 <- dat %>% filter(gear_code==1)
+ a <- tmp1$cpue_wt
   
- #tmp2 <- dat %>% filter(gear_code==5)
- #b <- tmp2$cpue_wt
-
-
+ tmp2 <- dat %>% filter(gear_code==5)
+ b <- tmp2$cpue_wt
 #kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
 #kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
-#ANOVA_fpc_l_wt_cheating <- fpc(log(a+1), log(b+1), method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+ANOVA_fpc_l_wt_cheating <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #ANOVA_fpc_l_wt_cheating2 <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #might not run correctly unless the gear_type is in order by haul. Right now it is not.
 
@@ -548,8 +567,11 @@ f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2$fpc) #was FPC
 ```
 
 MSE sim ANOVA FPC- see lines 498 on. 
-I do not understand but can edit this  myself
+I need to order the data before the sim, so that fpc will know the paired hauls
 ```{r}
+Data_for_sim_l <- large_m %>% arrange(haul, gear_code)
+Data_for_sim_s <- small_m %>% arrange(haul, gear_code)
+
 test_large_MSE_ANOVA<- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2) #now this is an anova
 f_sim_plot(data=test_large_MSE_ANOVA, fpc=FPC_large_wt)
 #oh dang. When n=48,the MSE is small enough where we apply the FPC.
