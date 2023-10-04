@@ -9,11 +9,15 @@ output: html_document
 
 
 ## Take-away message/Abstract
-Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. STATE RESULTS FOR ANOVA AND MSE
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.679 for large scallops and 0.736 for small scallops. Only the large scallops had a confidence interval that did not overlap with one.
 
-I also tried the KAppenman's method. It had more conservative results. STATE RESULTS FOR KAPP AND MSE. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted, which is undesirable here. STATE KAPPENMAN RESULTS.
+The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
 
-Normality: does not look terrible terrible when graphed but according to the Shaprio-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk 
+Since the large scallop FPC has CI's that do not overlap with one and reduces MSE, my analysis indicates that we should apply the FPC to the large scallops dataset. The small scallop FPC had CI's that did overlap with 1.
+
+Normality: does not look terrible terrible when graphed but also does not look great. According to the Shaprio-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Sicne the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
+
+I also tried the Kappenman's method. It had more conservative results. FPC was 0.84 for large scallops and 0.73 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted, which is undesirable here. How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? They are all outliers...
 
 In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
 
@@ -315,7 +319,7 @@ dat <- large_m
 
 
 kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
-#kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
+kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
 ANOVA_fpc_l_wt_cheating <- fpc(cpue2, cpue1, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 
 ANOVA_fpc_l_wt_cheating #ok. the shortcut method seems identical to the lm method 
@@ -336,9 +340,9 @@ kapp_wt_S2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unp
 
 
 kapp_wt_L1
-kapp_wt_L2
+kapp_wt_L2 #kodak -> homer
 kapp_wt_S1
-kapp_wt_S2
+kapp_wt_S2 #kodiak -> homer
 
 ```
 Comment: The Kappenman FPC's are lower than the randomized block ANOVA FPC's. Why?
@@ -486,8 +490,8 @@ f_sim_plot <- function(data, fpc){
 }
 
 #test
-test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be? 48 is the number of hauls (sample size 96)
-f_sim_plot(data=test_large, fpc=FPC_large_wt) #need to chage the fpc to a kapp value, this is the anova output. Kapp value is about 0.84
+#test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be? 48 is the number of hauls (sample size 96)
+#f_sim_plot(data=test_large, fpc=FPC_large_wt) #need to chage the fpc to a kapp value, this is the anova output. Kapp value is about 0.84
 
 #kapp
 kapp_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=4)
@@ -649,6 +653,9 @@ ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gea
 ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density() +theme_minimal()
 
 ggplot(specimen) + aes(x=shell_height) +geom_density() + facet_wrap(~gear_code, ncol=1) + theme_minimal() #density plot without weights
+
+#relative abundance
+#ggplot(specimen) + aes(x=shell_height) +geom_histogram() + facet_wrap(~gear_code, ncol=1) + theme_minimal() 
 ```
 
 Based on the graphs, I think I should do separate weighted KS tests. one for small scallops and one for large scallops.
@@ -696,6 +703,16 @@ ggplot(small_spec) + aes(x=shell_height, color=factor(gear_code), group=factor(g
 ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(gear_code)) + geom_histogram(aes(weight=sample_factor), position="jitter", alpha=0.5) +theme_minimal()
 
 #ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(gear_code)) + geom_histogram(position="jitter", alpha=0.5) +theme_minimal() #try with no weight
+```
+Summary table
+```{r}
+#randomized block ANOVA results (weight and number cpue)
+scallop_FPC_table 
+
+
+#kapp results (weight cpue)
+kapp_wt_L2 
+kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
 ```
 
 
