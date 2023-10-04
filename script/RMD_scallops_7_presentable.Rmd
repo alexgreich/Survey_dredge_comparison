@@ -196,6 +196,7 @@ hist(log(large$cpue_cnt))
 
 mod1_large_wt <- stats::lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m) #things are different after this runs through. What has happened?
 #haul is somewhere? the nammes are named somethign different?
+#something about running fishmethods::fpc with method=2 (randomized block anova) messes with the lm function.
 
 mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
 #mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
@@ -324,9 +325,19 @@ ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=fa
 #temp?
 ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="qual", palette=3)+
     theme_cowplot()
+
+ggplot(large_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="qual", palette=3)+
+    theme_cowplot()
+
+ggplot(large_m) + aes(x=factor(haul), y=cpue_wt, color=gear_code, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="seq", palette=5)+
+    theme_cowplot()
+
+ggplot(small_m) + aes(x=factor(haul), y=cpue_wt, color=gear_code, shape=factor(gear_code)) + geom_point(size=2) +scale_color_brewer(type="seq", palette=5)+
+    theme_cowplot()
+
 ```
 
-Residual plots - some possible outliers but no patterns. Normality fails.
+Residual plots - some possible outliers but no strong patterns. Normality fails.
 ```{r}
 ##plot resids
 plot(resid(mod1_large_cnt)) #couple of outliers
@@ -390,18 +401,20 @@ Kappenman #THIS IS IT! THE CHANGE HAPPENS HERE!! Figure out why lm opperates dif
 -I will try removing all things unnecessary
 ```{r}
 #large
-#dat <- large_m
+dat <- large_m
 
- # tmp1 = dat %>% filter(gear_code==1)
- # cpue1 <- tmp1$cpue_wt
+  tmp1 <- dat %>% filter(gear_code==1)
+  a <- tmp1$cpue_wt
   
- # tmp2 = dat %>% filter(gear_code==5)
- # cpue2 <- tmp2$cpue_wt
+ tmp2 <- dat %>% filter(gear_code==5)
+ b <- tmp2$cpue_wt
 
 
 #kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
 #kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
-#ANOVA_fpc_l_wt_cheating <- fpc(cpue2, cpue1, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+ANOVA_fpc_l_wt_cheating <- fpc(log(a+1), log(b+1), method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+ANOVA_fpc_l_wt_cheating2 <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+#might not run correctly unless the gear_type is in order by haul. Right now it is not.
 
 #ANOVA_fpc_l_wt_cheating #ok. the shortcut method seems identical to the lm method 
 #FPC_large_wt #the inverse, in this case
@@ -798,6 +811,7 @@ kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
 ```
 
 Remove the outliers, then try lm
+Also try the kap with method 2 (ANOVA)
 ```{r}
 
 ```
