@@ -4,7 +4,62 @@ author: "Alex Reich"
 date: "2023-09-27"
 output: html_document
 ---
+RESOLVED
+10/04/23 - clarifying function aka package::function so we don't get inconsistent results
+I'm trying to make it run poorly again. Run the whole thing and run again, see if it messes up?
 
+CRUCIAL: IT RAN INCORRECTLY IN THE KNIT. tHIS WAS THE SUMMARY TABLE:
+##         Category      FPC Upper_CI  Lower_CI
+## 1 large (weight) 2.182607 3.696794 1.2702534
+## 2   large(count) 2.184596 4.146233 1.1267943
+## 3  small(weight) 1.857320 3.774238 0.8954479
+## 4   small(count) 1.767572 4.676680 0.6449228
+
+after a run through:
+Call:
+lm(formula = log(cpue_wt + 1) ~ gear_code + haul, data = large_m)
+
+Coefficients:
+(Intercept)   gear_code1        haul1        haul2        haul3        haul4        haul5        haul6        haul7        haul8  
+    9.90872     -0.19334     -7.06019     -1.40345     -0.47000     -0.20910     -2.89568     -0.14845      0.25123     -2.73694  
+      haul9       haul10       haul11       haul12       haul13       haul14       haul15       haul16       haul17       haul18  
+    0.60243     -1.42837      0.18457      0.73493     -0.63844     -0.13491     -0.35896     -0.37477     -0.95573     -0.87735  
+     haul19       haul20       haul21       haul22       haul23       haul24       haul25       haul26       haul27       haul28  
+   -0.20437     -0.68956     -0.22619     -0.32729      0.57859      1.20007      0.49813      0.10667     -0.17640      1.24632  
+     haul29       haul30       haul31       haul32       haul33       haul34       haul35       haul36       haul37       haul38  
+    0.25785      1.64310      0.86702      1.89168     -0.01336      0.67876      1.44552      1.01775     -0.63057      0.20887  
+     haul39       haul40       haul41       haul42       haul43       haul44       haul45       haul46       haul47  
+    0.04095      1.08433     -0.15987      1.53921      0.85398      1.51418      0.18915      0.42214      1.51579 
+    
+    and 
+    
+    
+Category
+<chr>
+FPC
+<dbl>
+Upper_CI
+<dbl>
+Lower_CI
+<dbl>
+large (weight)	0.6787055	0.8872680	0.5201006	
+large(count)	0.6792782	0.9420581	0.4911036	
+small(weight)	0.7365905	1.0567685	0.5147370	
+small(count)	0.7571499	1.2452201	0.4624142	
+
+THE ABOVE IS HAUL 5 BASE COMPARED TO HAUL 1.
+
+Prob: setting names?
+
+
+The 0.67 large scallop FPC is what we get after a re-run
+- this is the result after resetting the environment
+-and the result after re-loading the dplys
+_
+
+i DO NOT KNOW WHY IT DID THAT. TOMORROW'S PROBLEM.
+
+tOMORROW ERASE HISTORY AND RUN ALL CHUNKS. sEE WHAT IS UP.
 WARNING: DATa WRANGLING NEEDS QC!! - done 10/02/23
 
 Tyler Q: Am I correcting the new dredge to the old dredge or the old dredge to the new dredge?

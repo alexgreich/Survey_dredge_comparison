@@ -5,78 +5,26 @@ date: "2023-09-27"
 output: html_document
 ---
 
-10/04/23 - clarifying function aka package::function so we don't get inconsistent results
-I'm trying to make it run poorly again. Run the whole thing and run again, see if it messes up?
-
-CRUCIAL: IT RAN INCORRECTLY IN THE KNIT. tHIS WAS THE SUMMARY TABLE:
-##         Category      FPC Upper_CI  Lower_CI
-## 1 large (weight) 2.182607 3.696794 1.2702534
-## 2   large(count) 2.184596 4.146233 1.1267943
-## 3  small(weight) 1.857320 3.774238 0.8954479
-## 4   small(count) 1.767572 4.676680 0.6449228
-
-after a run through:
-Call:
-lm(formula = log(cpue_wt + 1) ~ gear_code + haul, data = large_m)
-
-Coefficients:
-(Intercept)   gear_code1        haul1        haul2        haul3        haul4        haul5        haul6        haul7        haul8  
-    9.90872     -0.19334     -7.06019     -1.40345     -0.47000     -0.20910     -2.89568     -0.14845      0.25123     -2.73694  
-      haul9       haul10       haul11       haul12       haul13       haul14       haul15       haul16       haul17       haul18  
-    0.60243     -1.42837      0.18457      0.73493     -0.63844     -0.13491     -0.35896     -0.37477     -0.95573     -0.87735  
-     haul19       haul20       haul21       haul22       haul23       haul24       haul25       haul26       haul27       haul28  
-   -0.20437     -0.68956     -0.22619     -0.32729      0.57859      1.20007      0.49813      0.10667     -0.17640      1.24632  
-     haul29       haul30       haul31       haul32       haul33       haul34       haul35       haul36       haul37       haul38  
-    0.25785      1.64310      0.86702      1.89168     -0.01336      0.67876      1.44552      1.01775     -0.63057      0.20887  
-     haul39       haul40       haul41       haul42       haul43       haul44       haul45       haul46       haul47  
-    0.04095      1.08433     -0.15987      1.53921      0.85398      1.51418      0.18915      0.42214      1.51579 
-    
-    and 
-    
-    
-Category
-<chr>
-FPC
-<dbl>
-Upper_CI
-<dbl>
-Lower_CI
-<dbl>
-large (weight)	0.6787055	0.8872680	0.5201006	
-large(count)	0.6792782	0.9420581	0.4911036	
-small(weight)	0.7365905	1.0567685	0.5147370	
-small(count)	0.7571499	1.2452201	0.4624142	
-
-THE ABOVE IS HAUL 5 BASE COMPARED TO HAUL 1.
-
-Prob: setting names?
-
-
-The 0.67 large scallop FPC is what we get after a re-run
-- this is the result after resetting the environment
--and the result after re-loading the dplys
-_
-
-i DO NOT KNOW WHY IT DID THAT. TOMORROW'S PROBLEM.
-
-tOMORROW ERASE HISTORY AND RUN ALL CHUNKS. sEE WHAT IS UP.
 
 
 # Dredge comparison study
 
 
 ## Take-away message/Abstract
-Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.679 for large scallops and 0.736 for small scallops. Only the large scallops had a confidence interval that did not overlap with one.
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.46 for large scallops and 0.54 for small scallops. Only the large scallops had a confidence interval that did not overlap with one.
 
 The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
 
 Since the large scallop FPC has CI's that do not overlap with one and reduces MSE, my analysis indicates that we should apply the FPC to the large scallops dataset. The small scallop FPC had CI's that did overlap with 1.
 
-Normality: does not look terrible terrible when graphed but also does not look great. According to the Shaprio-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Sicne the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
+Normality: does not look terrible terrible when graphed but also does not look great. According to the Shapiro-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Sicne the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
 
-I also tried the Kappenman's method. It had more conservative results. FPC was 0.84 for large scallops and 0.73 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted, which is undesirable here. How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? They are all outliers...
+I also tried the Kappenman's method. It had more conservative results. FPC was 0.84 for large scallops and 0.73 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted and paired hauls are not accounted for, which is undesirable here. How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? They are all outliers...
 
 In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
+
+Results after outliers are removed:
+- a higher precision but does not change results for the randomized block ANOVA
 
 NEXT:
 -what are my ANOVA results when I remove the outliers?
@@ -159,11 +107,11 @@ small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
 
 #code the factors as factors
 large_m <- large_2 %>%
-           dplyr::mutate(gear_code = base::factor(gear_code), haul = base::factor(haul))  #levels=c(1,5) ? Specify levels in factors?
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5","1")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
     
 
 small_m <- small_2 %>%
-           dplyr::mutate(gear_code = base::factor(gear_code), haul = base::factor(haul)) #levels=c(1,5) ?
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5", "1")), haul = base::factor(haul)) #levels=c(1,5) ?
 
 ```
 
@@ -401,19 +349,19 @@ Kappenman #THIS IS IT! THE CHANGE HAPPENS HERE!! Figure out why lm opperates dif
 -I will try removing all things unnecessary
 ```{r}
 #large
-dat <- large_m
+#dat <- large_m
 
-  tmp1 <- dat %>% filter(gear_code==1)
-  a <- tmp1$cpue_wt
+ # tmp1 <- dat %>% filter(gear_code==1)
+ # a <- tmp1$cpue_wt
   
- tmp2 <- dat %>% filter(gear_code==5)
- b <- tmp2$cpue_wt
+ #tmp2 <- dat %>% filter(gear_code==5)
+ #b <- tmp2$cpue_wt
 
 
 #kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
 #kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
-ANOVA_fpc_l_wt_cheating <- fpc(log(a+1), log(b+1), method = 2, kapp_zeros = "ind", boot_type = "unpaired")
-ANOVA_fpc_l_wt_cheating2 <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+#ANOVA_fpc_l_wt_cheating <- fpc(log(a+1), log(b+1), method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+#ANOVA_fpc_l_wt_cheating2 <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #might not run correctly unless the gear_type is in order by haul. Right now it is not.
 
 #ANOVA_fpc_l_wt_cheating #ok. the shortcut method seems identical to the lm method 
