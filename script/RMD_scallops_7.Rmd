@@ -38,8 +38,8 @@ Data wrangle.
 
 ```{r}
 # join logbook and catch in a way that preserves zero catches
-expand_grid(logbook,
-            distinct(transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #expand logbook to all catch types
+tidyr::expand_grid(logbook,
+            distinct(dplyr::transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #expand logbook to all catch types
   left_join(catch_raw) %>% #join with the catch.This connects catch vales to gear_code id.
   # fill in zero catches
   replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
@@ -56,7 +56,7 @@ catch_cpue <- catch %>%
 specimen %>%
   # group by tow, samp grp, and size to get n at size
   group_by(tow, samp_grp, shell_height) %>%
-  summarize(count = n()) %>%
+  dplyr::summarize(count = n()) %>%
   # compute number measured per tow
   group_by(tow, samp_grp) %>%
   mutate(n_measured = n()) %>% ungroup %>%
