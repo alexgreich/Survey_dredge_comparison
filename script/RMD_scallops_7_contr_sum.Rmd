@@ -185,6 +185,47 @@ mod2_small_wt <- f_rand_block(data=small_m)
 
 
 ```
+Normality test
+```{r}
+
+```
 
 
+Graph fitted values
+```{r}
+
+```
+
+Other graphs
+```{r}
+
+```
+
+
+ANOVA MSE
+```{r}
+
+```
+
+KApp
+```{r}
+
+```
+
+
+Kapp MSE
+```{r}
+
+```
+
+Outlier exploration
+```{r}
+
+```
+
+
+What if we removed the outliers?
+```{r}
+
+```
 
