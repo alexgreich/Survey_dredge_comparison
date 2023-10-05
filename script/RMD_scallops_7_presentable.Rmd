@@ -222,23 +222,55 @@ scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MS
 #make sure factors, and factor orders, are set. Try changing the order of the facotrs in the lm?
 
 ```
-These results have this: 
-Category
-<chr>
-FPC
-<dbl>
-Upper_CI
-<dbl>
-Lower_CI
-<dbl>
-large (weight)	0.6787055	0.8872680	0.5201006	
-large(count)	0.6792782	0.9420581	0.4911036	
-small(weight)	0.7365905	1.0567685	0.5147370	
-small(count)	0.7571499	1.2452201	0.4624142	
+	
+	
+	
+	
 
-I have been having consistency issues with lm. Right now it is using gear_type 5 as base and gear_type 1 as change. Sometimes it does the opposite. Not sure why
+Says for large apply the FPC, small do not apply the FPC. But I should look at the MSE results as well.
 
-Says for large apply the FPC. What does the MSE say?
+
+Graph fitted values 
+```{r}
+#graph_predicted_cpue_wt<- function(mod, data){
+#newdata <- data.frame(gear_code_nd= base::rep(c("1","5")))
+#newdat <- data.frame(gear_code=data$gear_code, haul=data$haul)
+#data$predicted_values <-predict(object=mod, newdata=newdat)
+#print(predicted_values)
+
+
+#ggplot(data) + aes(x=haul, shape=gear_code, group= gear_code) + 
+ #   geom_point(y=cpue_wt, color="black", alpha=0.5)+
+  #  geom_point(y=predicted_values, color="red") 
+#}
+
+#graph_predicted(mod=mod1_large_wt, data=large_m)
+
+
+##Above failed
+
+#large scallops fitted values
+fitted_values_test <- predict(mod1_large_wt, type="response")
+large_m$fitted_cpue_wt <- exp(fitted_values_test)-1
+
+ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code) +
+    geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
+    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
+
+
+#small scallops fitted values
+
+fitted_values_test <- predict(mod1_small_wt, type="response")
+small_m$fitted_cpue_wt <- exp(fitted_values_test)-1
+
+ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code) +
+    geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
+    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
+
+```
+
+
+
 
 Aside: ratio of one to the other
 ```{r}
@@ -249,6 +281,8 @@ large_kodiak_mean <- mean(large_kodiak$cpue_wt)
 large_homer_mean <- mean(large_homer$cpue_wt)
 
 large_homer_mean/large_kodiak_mean
+
+#hmm
 ```
 
 
