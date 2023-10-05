@@ -1,0 +1,190 @@
+---
+title: "RMD_scallpop_contr.sum_edition"
+author: "Alex Reich"
+date: "2023-10-05"
+output: html_document
+---
+
+
+## Analysis/code
+
+Load packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(RColorBrewer)
+library(cowplot)
+library(fishmethods)
+library(viridis)
+
+set.seed(123)
+```
+
+
+Read in data. 
+```{r}
+## logbook data
+logbook <- read.csv("./data_folder/new_data_dump/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
+
+## catch data
+catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
+
+## specimen data
+specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+```
+
+
+Data wrangle.
+```{r}
+# join logbook and catch in a way that preserves zero catches
+tidyr::expand_grid(logbook,
+            dplyr::distinct(dplyr::transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #expand logbook to all catch types
+  dplyr::left_join(catch_raw) %>% #join with the catch.This connects catch vales to gear_code id.
+  # fill in zero catches
+  tidyr::replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
+  # filter for scallops
+  dplyr::filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
+  
+
+# cpue will be samp_wt (or count) / area_swept_sqnm. This code is calculating CPUE for both weight and number of scallops
+catch_cpue <- catch %>% 
+    dplyr::mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
+           cpue_wt = samp_wt/area_swept_sqnm)
+
+# compute sample factor for specimen data 
+specimen %>%
+  # group by tow, samp grp, and size to get n at size
+  dplyr::group_by(tow, samp_grp, shell_height) %>%
+  dplyr::summarize(count = n()) %>%
+  # compute number measured per tow
+  dplyr::group_by(tow, samp_grp) %>%
+  dplyr::mutate(n_measured = n()) %>% dplyr::ungroup() %>%
+  # join to catch data
+  dplyr::left_join(catch, by = c("tow", "samp_grp")) %>%
+  # compute sample factor
+  dplyr::mutate(sample_factor = samp_cnt * (count / n_measured)) -> specimen
+
+#separate large and small scallops for cpue
+large <- catch_cpue %>% dplyr::filter(samp_grp == 1)
+small <- catch_cpue %>% dplyr::filter(samp_grp == 2)
+
+##Remove where both hauls are 0.
+large_2 <- large %>% #no change
+    dplyr::group_by(haul) %>%
+    dplyr::filter(!all(cpue_cnt == 0)) %>%
+    dplyr::ungroup()
+
+small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
+    dplyr::group_by(haul) %>%
+    dplyr::filter(!all(cpue_cnt == 0)) %>%
+    dplyr::ungroup()
+
+#code the factors as factors
+large_m <- large_2 %>%
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5","1")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
+    
+
+small_m <- small_2 %>%
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5", "1")), haul = base::factor(haul)) #levels=c(1,5) ?
+
+```
+
+Exploratory graphs
+```{r}
+#any way, let's graph the data
+##separate into large and small scallops
+
+hist(log(large$cpue_wt+1)) #try smaller bins?
+hist(large$cpue_wt)
+hist(small$cpue_wt)
+hist(log(small$cpue_wt))
+hist(log(large$cpue_wt))
+hist(log(small$cpue_cnt))
+hist(log(large$cpue_cnt))
+
+```
+
+
+### ANOVA method
+```{r}
+options(contrasts = rep("contr.sum", 2)) #to use this or not?
+
+#log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
+##large scallops
+#large_m$gear_code <- relevel(large_m$gear_code, ref="5") #triedd this, decided no
+
+mod1_large_wt <- stats::lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m) #things are different after this runs through. What has happened?
+#haul is somewhere? the nammes are named somethign different?
+#something about running fishmethods::fpc with method=2 (randomized block anova) messes with the lm function.
+
+mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
+#mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
+##same same, different way
+
+##small scallops
+mod1_small_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=small_m)
+mod1_small_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
+
+#summary
+sum_large_wt <- summary(mod1_large_wt)
+sum_large_cnt <- summary(mod1_large_cnt)
+sum_small_wt <- summary(mod1_small_wt)
+sum_small_cnt <- summary(mod1_small_cnt)
+
+```
+
+ANOVA function - TYler's
+```{r}
+f_rand_block_wt <- function(data, vessel_name = "gear_code", cpue_name = "cpue_wt") { #why are there quotes in line 1?
+  
+  # ensure vessel and cpue columns are properly named #why do I need this here?
+  #data %>%
+   # rename(gear_code = as.name(gear_code),
+    #       cpue_wt = as.name(cpue_name)) -> data #not sure why i need this bloc
+  
+  # use sum contrasts for linear model  #what is this? Not a clue what this is dping. Do I need it?
+  options(contrasts = rep("contr.sum", 2)) #this sets a differnt default in R. Do I want this?
+    ##this is what messes up the lm function.... dO I want this or the default lm? Is this right? What's going on when I do this and why do I get different results
+  
+  #mutate(data, pair = as.character(pair)) -> data I think my haul specification works ok
+  
+  # fit linear model and extract coefficients
+  fit <- lm(log(cpue_wt + 1) ~ haul + gear_code, data = data)
+  coefs <- summary(fit)[["coefficients"]]
+  # number of hauls
+  n = length(unique(data$haul)) 
+  # grand mean; aka intercept
+  mu = coefs[1, 1] 
+  # resolution treatment effect
+  nu = coefs[nrow(coefs), 1] 
+  nu_se = coefs[nrow(coefs), 2] 
+  p_val = coefs[nrow(coefs), 4] 
+  # fpc
+  fpc = exp(2 * nu * (1 + (0.5 * nu_se^2))) 
+  l95 = exp((2 * nu) - (1.96 * 2 * nu_se))
+  u95 = exp((2 * nu) + (1.96 * 2 * nu_se))
+  
+  # output a tibble
+  tibble(lmod = list(fit),
+         n = n,
+         mu = mu,
+         gear_effect = nu,
+         se = nu_se,
+         p_val = p_val,
+         fpc = fpc,
+         l95 = l95,
+         u95 = u95)
+}
+
+#test the function
+
+mod2_large_wt <- f_rand_block(data=large_m) #appears to have worked
+mod2_small_wt <- f_rand_block(data=small_m)
+
+
+
+```
+
+
+
