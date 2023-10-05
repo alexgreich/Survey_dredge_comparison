@@ -253,7 +253,7 @@ Graph fitted values
 fitted_values_test <- predict(mod1_large_wt, type="response")
 large_m$fitted_cpue_wt <- exp(fitted_values_test)-1
 
-ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code) +
+ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code, size =3) +
     geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
     geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
 
@@ -263,7 +263,7 @@ ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code) +
 fitted_values_test <- predict(mod1_small_wt, type="response")
 small_m$fitted_cpue_wt <- exp(fitted_values_test)-1
 
-ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code) +
+ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=3) +
     geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
     geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
 
@@ -404,16 +404,16 @@ Kappenman #THIS IS IT! THE CHANGE HAPPENS HERE!! Figure out why lm opperates dif
 
 #sigh. Does not work below.
 #fpc does not work the same as my randomized bloc anova and I am confused as to why. See tyler code. 
-dat<- large_m %>% arrange(haul, gear_code)
+#dat<- large_m %>% arrange(haul, gear_code)
 
- tmp1 <- dat %>% filter(gear_code==1)
- a <- tmp1$cpue_wt
+ #tmp1 <- dat %>% filter(gear_code==1)
+ #a <- tmp1$cpue_wt
   
- tmp2 <- dat %>% filter(gear_code==5)
- b <- tmp2$cpue_wt
+ #tmp2 <- dat %>% filter(gear_code==5)
+ #b <- tmp2$cpue_wt
 #kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
 #kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
-ANOVA_fpc_l_wt_cheating <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+#ANOVA_fpc_l_wt_cheating <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #ANOVA_fpc_l_wt_cheating2 <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #might not run correctly unless the gear_type is in order by haul. Right now it is not.
 
