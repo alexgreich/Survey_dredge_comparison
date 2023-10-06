@@ -147,6 +147,7 @@ hist(log(large$cpue_cnt))
 ### ANOVA method
 ```{r}
 options(contrasts = rep("contr.sum", 2)) #to use this or not?????
+#options(contrasts = rep("contr.treatment", 2)) #oh. This way does not give me the grand mean as the intercept.
 #log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
 ##large scallops
 #large_m$gear_code <- relevel(large_m$gear_code, ref="5") #triedd this, decided no
