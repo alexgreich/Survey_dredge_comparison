@@ -108,7 +108,7 @@ hist(log(large$cpue_cnt))
 
 ### ANOVA method
 ```{r}
-options(contrasts = rep("contr.sum", 2)) #to use this or not?
+#options(contrasts = rep("contr.sum", 2)) #to use this or not?
 
 #log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
 ##large scallops
@@ -179,16 +179,86 @@ f_rand_block_wt <- function(data, vessel_name = "gear_code", cpue_name = "cpue_w
 
 #test the function
 
-mod2_large_wt <- f_rand_block(data=large_m) #appears to have worked
-mod2_small_wt <- f_rand_block(data=small_m)
+FPC_large_wt <- f_rand_block_wt(data=large_m) #appears to have worked
+FPC_small_wt <- f_rand_block_wt(data=small_m)
 
 
 
 ```
-Normality test
+
+
+Normality test and residual plots. Normality fails.
 ```{r}
 
+##plot resids
+#plot(resid(mod2_large_cnt)) #couple of outliers
+plot(resid(mod1_large_wt))
+#plot(resid(mod1_small_cnt)) #couple of outliers
+plot(resid(mod1_small_wt))  #up pattern
+
+
+qqnorm(log(large_m$cpue_wt+1))
+qqnorm(log(small_m$cpue_wt + 1))
+
+#formal normality test
+shapiro.test(log(large_m$cpue_wt+1))
+shapiro.test(log(small_m$cpue_wt+1))
+##both fail the formal normality test...
+#hist(log(large_m$cpue_wt+1))
+hist(log(large$cpue_wt+1))
+
+
+
+#plot outliers
+plot(mod1_large_wt) #21 and 22 appear to be outliers, This is haul #29. Kodiak caught 2, homer caught 0.
+plot(mod1_small_wt) #24, 35, 36, and 23 are outliers. These are hauls 41(indices 23 and 24; kodiak caught 0) and 71(indices 35 and 36; homer caught 0)
+plot(mod1_large_cnt)
+plot(mod1_small_cnt)
+
+#what if I remove the outliers?
+no_outliers_l <- large_m[-c(21,22),]
+no_outliers_s <- small_m[-c(23,24,35,36),]
+
+shapiro.test(log(no_outliers_l$cpue_wt+1))
+#fails normality test
+shapiro.test(log(no_outliers_s$cpue_wt+1))
+#passes normaliy test, barely
+
+#do results change if I remove the outliers?
+mod1_large_wt_nooutliers <- lm(log(cpue_wt+1) ~ gear_code + haul, data=no_outliers_l)
+sum_o<-summary(mod1_large_wt_nooutliers)
+
+s_large_wt_o <- sum_o$coefficients[2,2]  #SE for large scallops
+g_large_wt_o <- sum_o$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_wt_o <- exp(2*g_large_wt_o*(1+(0.5*(s_large_wt_o^2)))) 
+
+upper_CI_large_wt_no_outliers <- exp(2*g_large_wt_o + 1.96*2*s_large_wt_o)
+lower_CI_large_wt_no_outliers <- exp(2*g_large_wt_o - 1.96*2*s_large_wt_o)
+
+FPC_large_wt_o
+upper_CI_large_wt_no_outliers
+lower_CI_large_wt_no_outliers #same results, apply FPC. More precision though
+
+#small no outliers
+mod1_small_wt_nooutliers  <- lm(log(cpue_wt+1) ~ gear_code + haul, data=no_outliers_s)
+sum_o_s<-summary(mod1_small_wt_nooutliers)
+
+s_small_wt_o <- sum_o_s$coefficients[2,2]  #SE for large scallops
+g_small_wt_o <- sum_o_s$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_small_wt_o <- exp(2*g_small_wt_o*(1+(0.5*(s_small_wt_o^2)))) 
+
+upper_CI_small_wt_no_outliers <- exp(2*g_small_wt_o + 1.96*2*s_small_wt_o)
+lower_CI_small_wt_no_outliers <- exp(2*g_small_wt_o - 1.96*2*s_small_wt_o)
+
+scallop_FPC_table_2 <- rbind(scallop_FPC_table, c("large no outliers (weight)", FPC_large_wt_o, upper_CI_large_wt_no_outliers, lower_CI_large_wt_no_outliers))
+
+scallop_FPC_table_3 <- rbind(scallop_FPC_table_2, c("small no outliers (weight)", FPC_small_wt_o, upper_CI_small_wt_no_outliers, lower_CI_small_wt_no_outliers))
+
+scallop_FPC_table_3
 ```
+
 
 
 Graph fitted values

@@ -1,5 +1,5 @@
 ---
-title: "RMD_scallops_7_presentable"
+title: "RMD_scallops_8_presentable"
 author: "Alex Reich"
 date: "2023-09-27"
 output: html_document
@@ -7,12 +7,12 @@ output: html_document
 
 
 #TAke away
-I get different values for FPC based on this:options(contrasts = rep("contr.sum", 2)). I do not really undserstand what this does or why I should use it. But it is used in the crab code, so I probably should use it. But, does it do what I think it should do? Does it accept my data the way that I think that it is? Do I need to wrangle the data more specifically before using it?
+I get different values for FPC based on this:options(contrasts = rep("contr.sum", 2)). I do not understand what this does or why I should use it. But it is used in the crab code, so I probably should use it. But, does it do what I think it should do? Does it accept my data the way that I think that it is? Do I need to wrangle the data more specifically before using it?
 
 
 # Tyler questions
 Lm defauls. Do I use this to set the lm default:  options(contrasts = rep("contr.sum", 2))? This is what the side_by_side goa crab code does. but the results are different? I do not understand. Is it looking at my code the way it is supposed to? same results for the fpc output. Do I need to manipulate data differently, pivot_wider?
-- when that options code is applied, it changes the estimate for the model output but not the signficance. Probs changes the coeff interpretations. But how exactly, and which one do I use to calculate FPC? Because they will give me different FPC values.The intercept value is also the same between the two methods
+- when that options code is applied, it changes the estimate for the model output but not the significance. Probs changes the coeff interpretations. But how exactly, and which one do I use to calculate FPC? Because they will give me different FPC values.The intercept value is also the same between the two methods
 
 
 
@@ -20,20 +20,20 @@ Lm defauls. Do I use this to set the lm default:  options(contrasts = rep("contr
 
 
 ## Take-away message/Abstract
-Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.46 for large scallops and 0.54 for small scallops. Only the large scallops had a confidence interval that did not overlap with one.
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.46 (0.68 if manually setting the contrats) for large scallops and 0.54 (0.74 and still non significant if manually setting the contrats) for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
 
 The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
 
 Since the large scallop FPC has CI's that do not overlap with one and reduces MSE, my analysis indicates that we should apply the FPC to the large scallops dataset. The small scallop FPC had CI's that did overlap with 1.
 
-Normality: does not look terrible terrible when graphed but also does not look great. According to the Shapiro-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Sicne the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
+Normality: does not look terrible terrible when graphed but also does not look great. According to the Shapiro-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Since the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
 
 I also tried the Kappenman's method. It had more conservative results. FPC was 0.84 for large scallops and 0.73 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted and paired hauls are not accounted for, which is undesirable here. How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? They are all outliers...
 
 In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
 
 Results after outliers are removed:
-- a higher precision. See table. After removing the outliers, both small and large scallops have confidence intervals outside of 1.
+- ANOVA: a higher precision. See table. After removing the outliers, both small and large scallops have confidence intervals outside of 1.
 
 
 
@@ -115,11 +115,11 @@ small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
 
 #code the factors as factors
 large_m <- large_2 %>%
-           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5","1")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("1","5")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
     
 
 small_m <- small_2 %>%
-           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5", "1")), haul = base::factor(haul)) #levels=c(1,5) ?
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("1", "5")), haul = base::factor(haul)) #levels=c(1,5) ?
 
 ```
 
@@ -282,7 +282,7 @@ ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=3) +
 
 
 
-Aside: ratio of one to the other
+Aside: ratio of one to the other 
 ```{r}
 large_kodiak <- large_m %>% filter(gear_code==5)
 large_homer <- large_m %>% filter(gear_code==1)
@@ -413,16 +413,16 @@ Kappenman exploration. NOTE: after fpc(method=2) is run, lm() does not work the 
 
 #sigh. Does not work below.
 #fpc does not work the same as my randomized bloc anova and I am confused as to why. See tyler code. 
-#dat<- large_m %>% arrange(haul, gear_code)
+dat<- large_m %>% arrange(haul, gear_code)
 
- #tmp1 <- dat %>% filter(gear_code==1)
- #a <- tmp1$cpue_wt
+ tmp1 <- dat %>% filter(gear_code==1)
+ a <- tmp1$cpue_wt
   
- #tmp2 <- dat %>% filter(gear_code==5)
- #b <- tmp2$cpue_wt
+ tmp2 <- dat %>% filter(gear_code==5)
+ b <- tmp2$cpue_wt
 #kapp_wt_L1 <- fpc(cpue2, cpue1, method = 4, kapp_zeros = "ind", boot_type = "unpaired") #kapp_zeros="paired"??
 #kapp_wt_L2 <- fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired")
-#ANOVA_fpc_l_wt_cheating <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
+ANOVA_fpc_l_wt_cheating <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #ANOVA_fpc_l_wt_cheating2 <- fpc(a, b, method = 2, kapp_zeros = "ind", boot_type = "unpaired")
 #might not run correctly unless the gear_type is in order by haul. Right now it is not.
 
@@ -608,136 +608,18 @@ f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2$fpc) #was FPC
 
 ```
 
-Create lm function to plug into the mse sim WIP!!!!! - DELETE THIS BLOCK; DONT RUN
+MSE SIM ANOVA using the fpc (which apppears to have the same results as the lm output, when the contrasts are manually set)
 ```{r}
-f_lm_AR_wt <- function(data) {
-  fun <- lm(log(cpue_wt+1) ~ gear_code + haul ,data)
-    
-    
-  tmp1 = data %>% filter(gear_code==1)
-  cpue1 <- tmp1$cpue_wt
-  
-  tmp2 = data %>% filter(gear_code==5)
-  cpue2 <- tmp2$cpue_wt
-  
-  # call fishmethods::fpc
-  kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
-  #kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4), silent = T)
-  #AR adjusted so that cpue 2 is the first number and cpue 1 is the second number
-  #cpue 2 is for gear type 5 (new dredge)
-  #cpue 1 is for gear type 1(old dredge)
-  
-  # organize results
-  if(class(kapp) == "try-error"){
-    tibble(n = NA,
-           cpue1 = NA,
-           cpue2 = NA,
-           fpc = NA,
-           boot_se = NA,
-           boot_l95 = NA,
-           boot_u95 = NA) -> out
-  } else{
-    kapp %>%
-      as_tibble() %>%
-      rename(n = n1,
-             cpue1 = `mean cpue1`,
-             cpue2 = `mean cpue2`,
-             fpc = FPC,
-             boot_se = Boot_SE,
-             boot_l95 = `Boot_95%_LCI`,
-             boot_u95 = `Boot_95%_UCI`) %>%
-      dplyr::select(n, cpue1, cpue2, fpc, boot_se, boot_l95, boot_u95) -> out
-  }
-    
-  # fix names
-  #names(out)[2] = paste0(ves1, "_cpue")
-  #names(out)[3] = paste0(ves2, "_cpue")
-  
-  # output
-  return(out)
-  
-}
-```
+ANOVA_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2)
+f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) #was FPC
+##says dont use FPC(because it increases error) 
 
-MSE sim lm ANOVA function 1-WIP!!!!!!!!!!!!!!!!!!!!!!!! DONT RUN
-I'm not sure how to set up the MSE for a randomized bloc ANOVA, with fpc messing up.
-```{r}
-#AR adjustments
-f_lm_mse_sim_wt_AR1 <- function(data, n){
-  
-   #pull cpue from data
-  data %>%
-    pull(cpue_wt) -> cpue  
-    
-  # compute parameters of lognormal dist
-  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
-  var = log(1+(sd(cpue)/mean(cpue))^2) #for the bootstrap. AR.
-  
-  # check pdf
-  #hist(cpue, freq = F)
-  #lines(density(rlnorm(1000, meanlog = mu, sdlog = sqrt(var))), col = 2)
-  
-  cpue_u = NULL
-  cpue_c = NULL
-  mse_u = NULL
-  mse_c = NULL
-  fpd = seq(0.1, 2, 0.1) 
-  for(i in 1:length(fpd)){
-    for(j in 1:200){
-      # simulate cpue standard vessel aka the Homer dredge
-      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
-      # simulate cpue non-standard vessel aka the Kodiak dredge
-      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
-      # estimate FPC WITH LM
-      fpc <- fpc(cpue1 = hom_sim, cpue2 = kod_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
-      ##CAREFUIL!!  RES_SIM AND SOL_SIM ABOVE NEED TO BE REPLACED WITH WHAT IS MEANINGFOR TO YOUR VESSEL
-      
-      #10/05/23 - AR -  I'm tripping over what to do here. DO I run a regular lm to calculate an FPC? How would I do randomized block? Alternatively, how do I make the dang fpc code work?? ORdering by haul did not seem to work?
-      
-      # join vessel cpues to one vector
-      ## uncorrected
-      survey_u = c(hom_sim, kod_sim)
-      ## corrected
-      survey_c = c(hom_sim, (kod_sim * fpc$FPC))  # scale to standard vessel
-      
-      # compute means of uncorrected and corrected data
-      cpue_u[j] = mean(survey_u)
-      cpue_c[j] = mean(survey_c)
-      
-    }
-    mse_u[i] = mean((cpue_u - mean(cpue))^2)
-    mse_c[i] = mean((cpue_c - mean(cpue))^2)
-  }
-  
-  tibble(fpd = fpd,
-         mse_u = mse_u,
-         mse_c = mse_c)
-  
-}
-
-
-### simulation plot function AR
-f_sim_plot <- function(data, fpc){
-  # plot data
-  data %>%
-    pivot_longer(cols=c("mse_u", "mse_c"), names_to = "sim", values_to = "mse") %>%
-    mutate(sim = case_when(sim == "mse_u" ~ "Uncorrected",
-                           sim == "mse_c" ~ "Corrected")) %>%
-    ggplot()+
-    geom_point(aes(x = fpd, y = mse, color = sim), alpha = 0.3)+
-    geom_smooth(aes(x = fpd, y = mse, color = sim), method = "lm",formula = y ~ poly(x, 2), se = F)+
-   # scale_color_manual(values = cb_palette[c(1,3)])+
-    geom_vline(aes(xintercept = fpc), linetype = 2)+ #add in later? PROBS. AR
-    labs(x = "Fishing Power Difference", y = "MSE", color = NULL)+
-    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2)) -> x
-  # save
- # ggsave(paste0(path_prefix, spp_name, ".png"), plot = x, width = 5, height = 4, units = "in")
-  return(x)
-}
+ANOVA_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
+f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt)
 ```
 
 
-ANOVA function - TYler's
+ANOVA function - TLYERS
 ```{r}
 f_rand_block <- function(data, vessel_name = "gear_code", cpue_name = "cpue_wt") { #why are there quotes in line 1?
   
@@ -784,23 +666,19 @@ f_rand_block <- function(data, vessel_name = "gear_code", cpue_name = "cpue_wt")
 
 
 MSE sim ANOVA FPC- see lines 498 on. 
-I need to order the data before the sim, so that fpc will know the paired hauls
+I need to order the data before the sim, so that fpc will know the paired hauls?
+-same results as when not ordered
 ```{r}
-Data_for_sim_l <- large_m %>% arrange(haul, gear_code)
-Data_for_sim_s <- small_m %>% arrange(haul, gear_code)
+#Data_for_sim_l <- large_m %>% arrange(haul, gear_code)
+#Data_for_sim_s <- small_m %>% arrange(haul, gear_code)
 
-test_large_MSE_ANOVA<- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2) #now this is an anova
-f_sim_plot(data=test_large_MSE_ANOVA, fpc=FPC_large_wt)
+#test_large_MSE_ANOVA<- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2) #now this is an anova
+#f_sim_plot(data=test_large_MSE_ANOVA, fpc=FPC_large_wt)
 #oh dang. When n=48,the MSE is small enough where we apply the FPC.
 
-small_MSE_ANOVA <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
-f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt) 
+#small_MSE_ANOVA <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
+#f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt) 
 #this one is confusing. RIGHT ON THAT BOUNDARY! #oh but we do not acceot due to the CI's overlapping with 1 (the ANOVA CI's)
-```
-
-Now do this for count (large and small) cpue too. The prior analysis was for weight
-```{r}
-
 ```
 
 
@@ -858,7 +736,7 @@ ks.test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, alternative="two.
 #If y is numeric, a two-sample (Smirnov) test of the null hypothesis that x and y were drawn from the same distribution is performed. 
 
 
-##CRAP! This is cheatingm I need to weight the shell_heights based on the sample_factor. HOW TO DO THIS
+##CRAP! I need to weight the shell_heights based on the sample_factor. 
 ```
 Formal test between distributions with the weighted shell_height based on the sample factor.
 A non-QC'ed Attempt from stackexchange:
