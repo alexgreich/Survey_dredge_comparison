@@ -10,7 +10,7 @@ output: html_document
 
 
 ## Take-away message/Abstract
-Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Komologorov-Smirnof test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.68 for large scallops and 0.74 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Kolmogorov-Smirnov test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.68 for large scallops and 0.74 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
 
 The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
 
@@ -632,22 +632,6 @@ f_rand_block <- function(data, vessel_name = "gear_code", cpue_name = "cpue_wt")
 
 
 
-MSE sim ANOVA FPC- see lines 498 on. 
-I need to order the data before the sim, so that fpc will know the paired hauls?
--same results as when not ordered
-```{r}
-#Data_for_sim_l <- large_m %>% arrange(haul, gear_code)
-#Data_for_sim_s <- small_m %>% arrange(haul, gear_code)
-
-#test_large_MSE_ANOVA<- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2) #now this is an anova
-#f_sim_plot(data=test_large_MSE_ANOVA, fpc=FPC_large_wt)
-#oh dang. When n=48,the MSE is small enough where we apply the FPC.
-
-#small_MSE_ANOVA <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
-#f_sim_plot(data=small_MSE_ANOVA, fpc=FPC_small_wt) 
-#this one is confusing. RIGHT ON THAT BOUNDARY! #oh but we do not acceot due to the CI's overlapping with 1 (the ANOVA CI's)
-```
-
 
 # Size comp exploration
 - see liens 398 of sbs_fpc_estimateion.R code
@@ -724,7 +708,7 @@ ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor))
 ggplot(specimen) + aes(x=shell_height) + geom_density(aes(weight=sample_factor)) + facet_wrap(~gear_code, ncol=1) +theme_minimal() #final density plot with weights
 ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +theme_minimal() #final density plot with weights
 #unweighted plot below
-ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density() +theme_minimal()
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density() +theme_minimal() #without weights
 
 ggplot(specimen) + aes(x=shell_height) +geom_density() + facet_wrap(~gear_code, ncol=1) + theme_minimal() #density plot without weights
 
@@ -781,7 +765,7 @@ ggplot(small_spec) + aes(x=shell_height, fill=factor(gear_code), group=factor(ge
 Summary table
 ```{r}
 #randomized block ANOVA results (weight and number cpue)
-scallop_FPC_table 
+scallop_FPC_table_3 #the one includign outlier results
 
 
 #kapp results (weight cpue)
@@ -789,51 +773,46 @@ kapp_wt_L2
 kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
 ```
 
-Remove the outliers, then try lm
-Also try the kap with method 2 (ANOVA)
-```{r}
 
-```
-
-
-BELOW IS THE DRAFT WRITE UP
+##########################################################
+BELOW IS THE OUTLINE FOR THE DRAFT WRITE UP
 SAVE THIS WORK FOR LATER
 
 
 # Problem statement
-A new dredge was needed for the annual weathervane scallop survey, but the original dredge manufacturing details was not documented. It was decided to use a dredge designed and thoroughly tested in the Eastern United States. For the purposes of this project, the old dredge is referred to as the Homer dredge and the new dredge is referenced as the Kodiak dredge. Because the yearly weathervane scallop survey is a time series, there was need for a fishing power comparison between Homer and Kodiak dredges. {RE-WRITE AND COMPARE TO ALYSSA SUMMARY!!}
+A new dredge was needed for the annual weathervane scallop survey, but the original dredge manufacturing details was not documented. It was decided to use a dredge designed and thoroughly tested in the Eastern United States. For the purposes of this project, the old dredge is referred to as the Homer dredge and the new dredge is referenced as the Kodiak dredge. Because the yearly weathervane scallop survey is a time series, there was need for a fishing power comparison between Homer and Kodiak dredges. {Reference the summary provided by Alyssa for revision.}
 
 # Methods
 
 ## Study design
-To determine if a fishing power correction (FPC) is needed between the Homer dredge and the Kodiak dredge, a paired tow study was conducted. DETAILS. {SEE ALYSSA SUMMARY TO IMPROVE THIS TEXT!!}
+To determine if a fishing power correction (FPC) is needed between the Homer dredge and the Kodiak dredge, a paired tow study was conducted. DETAILS. {Reference the summary provided by Alyssa for revision.}
 
 ## Statistical analyses
 
 ### Fishing power correction (FPC) calculation
 
-The data was separated into large (MEASUREMENT) and small (MEASUREMETN) categories of scallops. This is because of (BIOLOGICAL REASON). CPUE was then calculated by dividing the weight {or number of scallops caught} by the area of the tow:
+The data was separated into large (MEASUREMENT) and small (MEASUREMENT) categories of scallops. This is because of (BIOLOGICAL/FISHERY REASON). CPUE was then calculated by dividing the weight {or number of scallops caught} by the area of the tow:
 
 (CPUE EQUATION)
 
-A randomized block ANOVA {ANCOVA??} was then performed on the data, with indivdual hauls as the randomized blocks (WERID WORDING). The CPUE was log-transformed to prevent negative fitted values. The equation is:
+A randomized block ANOVA {ANCOVA??} was then performed on the data, with indivdual hauls as the randomized blocks (WEIRD WORDING). The CPUE was log-transformed to prevent negative fitted values. The equation is:
 
-{EQUATION} (same as the Tyler paper)
+{EQUATION} (same as the Spaulinger and Jackson paper)
 
 Where __ represents the cpue, __ is the grand mean {aka intercept}, _g_ is the gear effect of the Homer or Kodiak dredge, __ is the haul effect, and __ represents the error with a normal distribution. This was conducted separately for large and small categories of scallops.
 
 Fishing power correction was calculated as:
 
-{EQUATION; see Tyler paper page 4}
+{EQUATION; see Spaulinger and Jackson paper page 4}
 
-where (see Tyler paper) and s^2 is the variance parameter estimate of _g_.
+where (see Spaulinger and Jackson paper) and s^2 is the variance parameter estimate of _g_.
 
 The confidence intervals were calculated as:
 
-{EQUATION; see Tyler paper page 4}
+{EQUATION; see Spaulinger and Jackson  page 4}
 
 ### Mean square error
- {Talk about other studies, the first ones that use MSE (Munro 1998 and other), the ones that use the FPC CI's and also MSE (Tyler's paper and one other) and that you will follow thier example}
+ {Talk about other studies, the first ones that use MSE (Munro 1998 and other), the ones that use the FPC CI's and also MSE (Spaulinger and Jackson paper and one other) and that you will follow thier example}
 
 ### Catch distribution comparison
 Sample distributions of the Homer and Kodiak dredges were compared using the Kolmogorov-smirnov test (CITE)
@@ -860,14 +839,15 @@ Add in the caveats. What survey complications can I quantitatively add into the 
 
 # Draft list of Figures
 - map of study area
-- Map of hauls (potentially combine with formet)
+- Map of hauls (potentially combine with former)
 --might take multiple figures
 - Dredge pics/diagrams of both Homer and Kodiak dredges
 - Catch density comparisons for both L and S scallops
-_ FPC graph with CI's? (see Tyler paper fig 10)
+_ FPC graph with CI's? (see Spaulinger and Jackson paper fig 10)
 - MSE simulation graphs (at least for L scallops)
-- the theoretical FPD (appendix 1 from tyler paper)
+- the theoretical FPD (appendix 1 from Spaulinger and Jackson)
 
 # Draft list of tables
 - Dredge dimension comparisons
+- scallop FPC and CI results
 
