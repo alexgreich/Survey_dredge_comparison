@@ -6,16 +6,6 @@ output: html_document
 ---
 
 
-#TAke away
-I get different values for FPC based on this:options(contrasts = rep("contr.sum", 2)). I do not understand what this does or why I should use it. But it is used in the crab code, so I probably should use it. But, does it do what I think it should do? Does it accept my data the way that I think that it is? Do I need to wrangle the data more specifically before using it?
-
-
-# Tyler questions
-Lm defauls. Do I use this to set the lm default:  options(contrasts = rep("contr.sum", 2))? This is what the side_by_side goa crab code does. but the results are different? I do not understand. Is it looking at my code the way it is supposed to? same results for the fpc output. Do I need to manipulate data differently, pivot_wider?
-- when that options code is applied, it changes the estimate for the model output but not the significance. Probs changes the coeff interpretations. But how exactly, and which one do I use to calculate FPC? Because they will give me different FPC values.The intercept value is also the same between the two methods
-
-
-
 # Dredge comparison study
 
 
