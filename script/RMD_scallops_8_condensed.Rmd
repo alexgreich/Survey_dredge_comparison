@@ -802,6 +802,8 @@ AIC(mod1_small_wt_nooutliers, glm1_small_wt)
 
 
 #glmm - to do later?
+#glmmTMB()
+#glmer()
 
 
 ```
