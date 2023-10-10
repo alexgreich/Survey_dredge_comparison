@@ -127,15 +127,14 @@ hist(log(small$cpue_cnt), breaks=20)
 hist(log(large$cpue_cnt), breaks=20)
 
 
-#try gamma? #need to find better starting parameters,,,
-hist(large$cpue_wt, breaks=20, prob=T)
-# Overlay a gamma PDF curve for comparison
-shape <- 6  # Adjust shape parameter as needed
-rate <- 4 # Adjust rate parameter as needed
-x <- seq(0, max(large$cpue_wt), length = 100)
-y <- dgamma(x, shape, rate)
-lines(x, y, col = "red", lwd = 2)
 
+#gamma explore
+hist(large$cpue_wt, breaks=20)
+hist(small$cpue_wt, breaks=20)
+x<-rgamma(n=1000, shape=2, rate=1)
+hist(x)
+x<-rgamma(n=1000, shape=0.7, rate=1)
+hist(x, breaks=20)
 ```
 
 
@@ -782,6 +781,34 @@ scallop_FPC_table_3 #the one includign outlier results
 kapp_wt_L2 
 kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
 ```
+
+
+Gamma glm? - ANOVA
+Gamma glmm? - mixed model - haul # as the random variable
+```{r}
+#glm
+##I had to remove 0's in order to the gamma distribution to work.
+options(contrasts = rep("contr.sum", 2)) 
+
+glm1_large_wt <- stats::glm(cpue_wt ~ gear_code + haul, data=no_outliers_l, family="Gamma")
+
+glm1_small_wt <- stats::glm(cpue_wt ~ gear_code + haul, data=no_outliers_s, family="Gamma")
+
+AIC(mod1_large_wt_nooutliers, glm1_large_wt) #comparing the no outleir versions because the gamma cannot handle 0's(?)
+AIC(mod1_small_wt_nooutliers, glm1_small_wt)
+##linear model is better, says AIC.
+
+###can I plug this into the FPC formula the same way as for the gaussian ANOVA?
+
+
+#glmm - to do later?
+
+
+```
+
+
+
+
 
 
 ##########################################################
