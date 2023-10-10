@@ -1,5 +1,5 @@
 ---
-title: "RMD_scallops_8_presentable"
+title: "Scallop dredge comparison draft RMD"
 author: "Alex Reich"
 date: "2023-10-09"
 output: html_document
@@ -118,13 +118,23 @@ Exploratory graphs
 ```{r}
 ##separate into large and small scallops
 
-hist(log(large$cpue_wt+1)) #try smaller bins?
-hist(large$cpue_wt)
-hist(small$cpue_wt)
-hist(log(small$cpue_wt))
-hist(log(large$cpue_wt))
-hist(log(small$cpue_cnt))
-hist(log(large$cpue_cnt))
+hist(log(large$cpue_wt+1), breaks=20) #try smaller bins?
+hist(large$cpue_wt, breaks=20)
+hist(small$cpue_wt, breaks=20)
+hist(log(small$cpue_wt), breaks=20)
+hist(log(large$cpue_wt), breaks=20)
+hist(log(small$cpue_cnt), breaks=20)
+hist(log(large$cpue_cnt), breaks=20)
+
+
+#try gamma? #need to find better starting parameters,,,
+hist(large$cpue_wt, breaks=20, prob=T)
+# Overlay a gamma PDF curve for comparison
+shape <- 6  # Adjust shape parameter as needed
+rate <- 4 # Adjust rate parameter as needed
+x <- seq(0, max(large$cpue_wt), length = 100)
+y <- dgamma(x, shape, rate)
+lines(x, y, col = "red", lwd = 2)
 
 ```
 
