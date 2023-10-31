@@ -939,5 +939,9 @@ ggplot(restructured_data_l) + geom_abline(intercept=0, slope=1, linetype="dashed
 #now the large
 ```
 Graph conclusions:
-As the cpue increases, there is more variation in Kodiak and Homer CPUE
+As the cpue increases, there is more variation in Kodiak and Homer .
+Seems to be linear until ~40000 CPUE, and then changes to a curve relationship
+
+TO DO:
+
 
