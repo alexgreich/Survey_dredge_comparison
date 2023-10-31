@@ -1,0 +1,271 @@
+---
+title: "RMD_scallops_8_biologistsummary"
+author: "Alex Reich"
+date: "2023-10-31"
+output: html_document
+---
+
+## Take-away message/Abstract
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Kolmogorov-Smirnov test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.68 for large scallops and 0.74 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
+
+The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
+
+Since the large scallop FPC has CI's that do not overlap with one and reduces MSE, my analysis indicates that we should apply the FPC to the large scallops dataset. The small scallop FPC had CI's that did overlap with 1.
+
+Normality: does not look terrible terrible when graphed but also does not look great. According to the Shapiro-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Since the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
+
+I also tried the Kappenman's method. It had more conservative results. FPC was 0.84 for large scallops and 0.73 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted and paired hauls are not accounted for, which is undesirable here. How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? They are all outliers...
+
+In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
+
+Results after outliers are removed:
+- ANOVA: a higher precision. See table. After removing the outliers, both small and large scallops have confidence intervals outside of 1.
+
+
+
+
+## Analysis
+
+Load packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(RColorBrewer)
+library(cowplot)
+library(fishmethods)
+library(viridis)
+library(patchwork)
+
+set.seed(123)
+```
+
+
+Read in data. 
+```{r}
+## logbook data
+logbook <- read.csv("./data_folder/new_data_dump/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
+
+## catch data
+catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
+
+## specimen data
+specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+```
+
+
+Data wrangle.
+```{r}
+# join logbook and catch in a way that preserves zero catches
+tidyr::expand_grid(logbook,
+            dplyr::distinct(dplyr::transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #expand logbook to all catch types
+  dplyr::left_join(catch_raw) %>% #join with the catch.This connects catch vales to gear_code id.
+  # fill in zero catches
+  tidyr::replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
+  # filter for scallops
+  dplyr::filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
+  
+
+# cpue will be samp_wt (or count) / area_swept_sqnm. This code is calculating CPUE for both weight and number of scallops
+catch_cpue <- catch %>% 
+    dplyr::mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
+           cpue_wt = samp_wt/area_swept_sqnm)
+
+# compute sample factor for specimen data 
+specimen %>%
+  # group by tow, samp grp, and size to get n at size
+  dplyr::group_by(tow, samp_grp, shell_height) %>%
+  dplyr::summarize(count = n()) %>%
+  # compute number measured per tow
+  dplyr::group_by(tow, samp_grp) %>%
+  dplyr::mutate(n_measured = n()) %>% dplyr::ungroup() %>%
+  # join to catch data
+  dplyr::left_join(catch, by = c("tow", "samp_grp")) %>%
+  # compute sample factor
+  dplyr::mutate(sample_factor = samp_cnt * (count / n_measured)) -> specimen
+
+#separate large and small scallops for cpue
+large <- catch_cpue %>% dplyr::filter(samp_grp == 1)
+small <- catch_cpue %>% dplyr::filter(samp_grp == 2)
+
+##Remove where both hauls are 0.
+large_2 <- large %>% #no change
+    dplyr::group_by(haul) %>%
+    dplyr::filter(!all(cpue_cnt == 0)) %>%
+    dplyr::ungroup()
+
+small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
+    dplyr::group_by(haul) %>%
+    dplyr::filter(!all(cpue_cnt == 0)) %>%
+    dplyr::ungroup()
+
+#code the factors as factors
+large_m <- large_2 %>%
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("1","5")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
+    
+
+small_m <- small_2 %>%
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("1", "5")), haul = base::factor(haul)) #levels=c(1,5) ?
+
+```
+
+# Graphs CHOOSE 3
+Exploratory plots
+```{r}
+
+#logged cpue scale
+log_large_plot <- ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+    theme_cowplot()+
+    xlab("Haul")+ ylab("log(CPUE + 1)")+
+    ggtitle("Large scallops")+
+    labs(shape="Gear type", color= "Bed name")
+
+log_small_plot <- ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=4) + scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+    theme_cowplot() +
+    xlab("Haul")+ ylab("log(CPUE + 1)")+
+    ggtitle("Small scallops")+
+    labs(shape="Gear type", color= "Bed name")
+
+compound_log <- log_large_plot/log_small_plot
+
+ggsave("compound_scallops_log_cpue_wt.png", plot=compound_log, width=20, height=10, units="in")
+
+#regular cpue scale
+large_plot <- ggplot(large_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+    theme_cowplot()+
+    xlab("Haul")+ ylab("CPUE (weight)")+
+    ggtitle("Large scallops")+
+    labs(shape="Gear type", color= "Bed name")
+
+small_plot <- ggplot(small_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) + scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+    theme_cowplot() +
+    xlab("Haul")+ ylab("CPUE (weight)")+
+    ggtitle("Small scallops")+
+    labs(shape="Gear type", color= "Bed name")
+
+compound_reg <- large_plot/small_plot
+
+ggsave("compound_scallops_regular_cpue_wt.png", plot=compound_reg, width=20, height=10, units="in")
+
+```
+
+Kodiak: Homer plots
+```{r}
+
+```
+
+
+## Data analysis
+
+### ANOVA method
+```{r}
+options(contrasts = rep("contr.sum", 2)) #to use this or not?????
+#options(contrasts = rep("contr.treatment", 2)) #oh. This way does not give me the grand mean as the intercept.
+#log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
+##large scallops
+#large_m$gear_code <- relevel(large_m$gear_code, ref="5") #triedd this, decided no
+
+mod1_large_wt <- stats::lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m) #things are different after this runs through. What has happened?
+#haul is somewhere? the nammes are named somethign different?
+#something about running fishmethods::fpc with method=2 (randomized block anova) messes with the lm function.
+
+mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
+#mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
+##same same, different way
+
+##small scallops
+mod1_small_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=small_m)
+mod1_small_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
+
+#summary
+sum_large_wt <- summary(mod1_large_wt)
+sum_large_cnt <- summary(mod1_large_cnt)
+sum_small_wt <- summary(mod1_small_wt)
+sum_small_cnt <- summary(mod1_small_cnt)
+
+```
+
+
+Get FPC table from ANOVA
+```{r}
+##calculate the Fishing Power Correction (FPC) estimator
+s_large_wt <- sum_large_wt$coefficients[2,2]  #SE for large scallops
+g_large_wt <- sum_large_wt$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_wt <- exp(2*g_large_wt*(1+(0.5*(s_large_wt^2)))) 
+
+
+s_large_cnt <- sum_large_cnt$coefficients[2,2]  #SE for large scallops
+g_large_cnt <- sum_large_cnt$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_cnt <- exp(2*g_large_cnt*(1+0.5*(s_large_cnt^2)))
+
+
+s_small_wt <- sum_small_wt$coefficients[2,2]  
+g_small_wt <- sum_small_wt$coefficients[2,1] 
+
+FPC_small_wt <- exp(2*g_small_wt*(1+0.5*(s_small_wt^2)))
+
+
+s_small_cnt <- sum_small_cnt$coefficients[2,2]  
+g_small_cnt <- sum_small_cnt$coefficients[2,1] 
+
+FPC_small_cnt <- exp(2*g_small_cnt*(1+0.5*(s_small_cnt^2)))
+
+FPC <- c(FPC_large_wt, FPC_large_cnt, FPC_small_wt, FPC_small_cnt)
+Category <- c("large (weight)" , "large(count)", "small(weight)", "small(count)")
+
+scallop_FPC_table <- data.frame(Category, FPC)
+
+#CALCULATE CONFIDENCE INTERVALS
+##95%CI = exp(2g (+-) 1.96 * 2sqrt(SE^2))
+
+upper_CI_large_wt <- exp(2*g_large_wt + 1.96*2*s_large_wt)
+lower_CI_large_wt <- exp(2*g_large_wt - 1.96*2*s_large_wt)
+upper_CI_large_cnt<- exp(2*g_large_cnt + 1.96*2*s_large_cnt)
+lower_CI_large_cnt<- exp(2*g_large_cnt - 1.96*2*s_large_cnt)
+upper_CI_small_wt <- exp(2*g_small_wt + 1.96*2*s_small_wt)
+lower_CI_small_wt <- exp(2*g_small_wt - 1.96*2*s_small_wt)
+upper_CI_small_cnt <-exp(2*g_small_cnt + 1.96*2*s_small_cnt)
+lower_CI_small_cnt <-exp(2*g_small_cnt - 1.96*2*s_small_cnt)
+
+
+upper_CI <- c(upper_CI_large_wt, upper_CI_large_cnt, upper_CI_small_wt, upper_CI_small_cnt)
+lower_CI <- c(lower_CI_large_wt, lower_CI_large_cnt, lower_CI_small_wt,lower_CI_small_cnt)
+
+
+scallop_FPC_table$Upper_CI <- upper_CI
+scallop_FPC_table$Lower_CI <- lower_CI
+
+scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MSE support this?
+
+
+```
+
+Says for large apply the FPC, small do not apply the FPC. But I should look at the MSE results as well.
+
+
+PREDICTION PLOTS 
+```{r}
+
+#large scallops fitted values
+fitted_values_test <- predict(mod1_large_wt, type="response")
+large_m$fitted_cpue_wt <- exp(fitted_values_test)-1
+
+ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code, size =3) +
+    geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
+    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
+
+
+#small scallops fitted values
+
+fitted_values_test <- predict(mod1_small_wt, type="response")
+small_m$fitted_cpue_wt <- exp(fitted_values_test)-1
+
+ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=3) +
+    geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
+    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
+
+```
+
+DISTRIBUTION PLOTS
