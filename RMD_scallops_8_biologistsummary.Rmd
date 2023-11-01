@@ -191,27 +191,39 @@ ggplot(restructured_data_s) +
     
 #that again, but logged  
 ##large
-ggplot(restructured_data_l) + 
+a<-ggplot(restructured_data_l) + 
     #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
-    geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1))) + geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
-    theme_cowplot() +
-    scale_color_viridis(discrete=T)+
-    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
-    xlab("Kodiak CPUE (weight)")+
-    ylab("Homer CPUE (weight)")+
-    ggtitle("Large scallops, logged")
-
-##small
-ggplot(restructured_data_s) + 
-    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
-    geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1))) + 
+    geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1)), method="lm") + 
     geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
     theme_cowplot() +
     scale_color_viridis(discrete=T)+
-    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    #scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
     xlab("Kodiak CPUE (weight)")+
     ylab("Homer CPUE (weight)")+
-    ggtitle("Small scallops, logged")
+    ggtitle("Large scallops, logged")+
+    labs(shape = "Reg area")#+
+    #guides(shape=FALSE, color=FALSE)
+
+##small
+b<-ggplot(restructured_data_s) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1)), method="lm") + 
+    geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    #scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops, logged")+
+    labs(shape="Reg area")
+
+logged_homer_kodiak<-a+b #that worked to combine, without the legends being too werid
+
+#save plot
+ggsave("logged_homer_vs_kodiak.png", plot=logged_homer_kodiak, width=20, height=10, units="in")
+
+
+
 
 ```
 
@@ -306,6 +318,179 @@ scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MS
 Says for large apply the FPC, small do not apply the FPC. But I should look at the MSE results as well.
 
 
+
+#Kappeman
+
+Kappenman's function - adjusted from crab github code
+```{r}
+f_kapp_AR <- function(data) {
+    #deleted args from function: ves1, ves2, vessel_name = "vessel"
+  
+  # ensure vessel and cpue columns are properly named
+  #data %>%
+   # rename(vessel = as.name(vessel_name),
+    #       cpue = as.name(cpue_name)) -> data
+  
+  # pivot data to wide format (i.e., in pairs)
+ # data %>%
+    #pivot_wider(names_from = vessel, values_from = cpue_wt) -> data
+  # extract cpue vectors from data
+ # cpue1 = data %>% pull(as.name(ves1)) # standard vessel
+ # cpue2 = data %>% pull(as.name(ves2)) 
+  
+  #alex code
+  tmp1 = data %>% filter(gear_code==1)
+  cpue1 <- tmp1$cpue_wt
+  
+  tmp2 = data %>% filter(gear_code==5)
+  cpue2 <- tmp2$cpue_wt
+  
+  # call fishmethods::fpc
+  kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+  #kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4), silent = T)
+  #AR adjusted so that cpue 2 is the first number and cpue 1 is the second number
+  #cpue 2 is for gear type 5 (new dredge)
+  #cpue 1 is for gear type 1(old dredge)
+  
+  # organize results
+  if(class(kapp) == "try-error"){
+    tibble(n = NA,
+           cpue1 = NA,
+           cpue2 = NA,
+           fpc = NA,
+           boot_se = NA,
+           boot_l95 = NA,
+           boot_u95 = NA) -> out
+  } else{
+    kapp %>%
+      as_tibble() %>%
+      rename(n = n1,
+             cpue1 = `mean cpue1`,
+             cpue2 = `mean cpue2`,
+             fpc = FPC,
+             boot_se = Boot_SE,
+             boot_l95 = `Boot_95%_LCI`,
+             boot_u95 = `Boot_95%_UCI`) %>%
+      dplyr::select(n, cpue1, cpue2, fpc, boot_se, boot_l95, boot_u95) -> out
+  }
+    
+  # fix names
+  #names(out)[2] = paste0(ves1, "_cpue")
+  #names(out)[3] = paste0(ves2, "_cpue")
+  
+  # output
+  return(out)
+  
+}
+
+#ok ok, that should be a functional function. f_kapp_AR
+
+kapp_wt_L2 <- f_kapp_AR(data=large_m)
+kapp_wt_S2 <- f_kapp_AR(data=small_m)
+```
+
+MSE sim Kapp - adjsuted from crab github code
+```{r}
+#AR adjustments
+f_kapp_mse_sim_AR1 <- function(data, n, method){
+  
+  # pull cpue from data
+  data %>%
+    pull(cpue_wt) -> cpue  
+    
+  # compute parameters of lognormal dist
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
+  var = log(1+(sd(cpue)/mean(cpue))^2) #ah. for the bootstrap. AR.
+  
+  # check pdf
+  #hist(cpue, freq = F)
+  #lines(density(rlnorm(1000, meanlog = mu, sdlog = sqrt(var))), col = 2)
+  
+  cpue_u = NULL
+  cpue_c = NULL
+  mse_u = NULL
+  mse_c = NULL
+  fpd = seq(0.1, 2, 0.1) 
+  for(i in 1:length(fpd)){
+    for(j in 1:200){
+      # simulate cpue standard vessel aka the Homer dredge
+      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
+      # simulate cpue non-standard vessel aka the Kodiak dredge
+      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
+      # estimate FPC
+      fpc <- fpc(cpue1 = hom_sim, cpue2 = kod_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
+      
+      # join vessel cpues to one vector
+      ## uncorrected
+      survey_u = c(hom_sim, kod_sim)
+      ## corrected
+      survey_c = c(hom_sim, (kod_sim * fpc$FPC))  # scale to standard vessel
+      
+      # compute means of uncorrected and corrected data
+      cpue_u[j] = mean(survey_u)
+      cpue_c[j] = mean(survey_c)
+      
+    }
+    mse_u[i] = mean((cpue_u - mean(cpue))^2)
+    mse_c[i] = mean((cpue_c - mean(cpue))^2)
+  }
+  
+  tibble(fpd = fpd,
+         mse_u = mse_u,
+         mse_c = mse_c)
+  
+}
+
+
+### simulation plot function AR
+f_sim_plot <- function(data, fpc){
+  # plot data
+  data %>%
+    pivot_longer(cols=c("mse_u", "mse_c"), names_to = "sim", values_to = "mse") %>%
+    mutate(sim = case_when(sim == "mse_u" ~ "Uncorrected",
+                           sim == "mse_c" ~ "Corrected")) %>%
+    ggplot()+
+    geom_point(aes(x = fpd, y = mse, color = sim), alpha = 0.3)+
+    geom_smooth(aes(x = fpd, y = mse, color = sim), method = "lm",formula = y ~ poly(x, 2), se = F)+
+   # scale_color_manual(values = cb_palette[c(1,3)])+
+    geom_vline(aes(xintercept = fpc), linetype = 2)+ #add in later? PROBS. AR
+    labs(x = "Fishing Power Difference", y = "MSE", color = NULL)+
+    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2)) -> x
+  # save
+ # ggsave(paste0(path_prefix, spp_name, ".png"), plot = x, width = 5, height = 4, units = "in")
+  return(x)
+}
+
+#test
+#test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be? 48 is the number of hauls (sample size 96)
+#f_sim_plot(data=test_large, fpc=FPC_large_wt) #need to chage the fpc to a kapp value, this is the anova output. Kapp value is about 0.84
+
+#kapp
+kapp_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=4)
+f_sim_plot(data=kapp_mse_large, fpc=kapp_wt_L2$fpc) #was FPC
+##says dont use FPC(because it increases error) 
+
+kapp_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=4)
+f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2$fpc) #was FPC
+#borderline
+
+```
+
+
+MSE SIM ANOVA using the fpc (which apppears to have the same results as the lm output, when the contrasts are manually set)
+```{r}
+ANOVA_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2)
+f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) #was FPC
+##says dont use FPC(because it increases error) 
+
+ANOVA_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
+f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt)
+```
+
+
+
+
+
 PREDICTION PLOTS 
 ```{r}
 
@@ -331,11 +516,58 @@ ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=3) +
 
 DISTRIBUTION PLOTS
 ```{r}
+hist(specimen$sample_factor) #so lots of low numbers for the sample factor. Many hauls had few scallops.
+
+ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +
+#facet_wrap(~gear_code, ncol=1) +
+theme_cowplot()+ 
+scale_color_manual(values = c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+
+xlab("Shell height")+
+ylab("Density")+
+ggtitle("Shell height density, all scallop sizes")+
+labs(color=NULL)
+
+#separated into large and small
+large_spec <- specimen %>% filter(samp_grp == 1)
+small_spec <- specimen %>% filter(samp_grp == 2)
+
+ggplot(large_spec) + 
+    aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + 
+    geom_density(aes(weight=sample_factor)) +
+    theme_cowplot()+
+    scale_color_manual(values=c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+
+    xlab("Shell height")+
+    ylab("Density")+
+    labs(color=NULL)+
+    ggtitle("Shell height density, large scallops")
+
+ggplot(small_spec) +
+    aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + 
+    geom_density(aes(weight=sample_factor)) +
+    theme_cowplot()+
+    scale_color_manual(values=c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+
+    xlab("Shell height")+
+    ylab("Density")+
+    labs(color=NULL)+
+    ggtitle("Shell height density, small scallops")
+
+    
+
 
 ```
 
 DISTRIBUTION TESTS
-```{r}
 
+Weighted ks test
+```{r}
+library(Ecume)
+
+homer_spec <- specimen %>% filter(gear_code==1)
+kodiak_spec <- specimen %>% filter(gear_code==5)
+ks.test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, alternative="two.sided")
+
+ks_weighted_result_4 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #testing H0 D=0?
+
+ks_weighted_result_4 #says do not reject H0, p=.99
 ```
 
