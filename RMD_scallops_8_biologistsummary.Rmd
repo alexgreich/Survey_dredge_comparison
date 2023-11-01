@@ -488,7 +488,17 @@ f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt)
 ```
 
 
+CONCLUSION TABLES
+Summary table
+```{r}
+#randomized block ANOVA results (weight and number cpue)
+scallop_FPC_table_3 #the one includign outlier results #DOES THIS ONE WORK WHEN EVERYTHING RESET??
 
+
+#kapp results (weight cpue)
+kapp_wt_L2 
+kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
+```
 
 
 PREDICTION PLOTS 
@@ -569,5 +579,20 @@ ks.test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, alternative="two.
 ks_weighted_result_4 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0, w_x=(homer_spec$sample_factor/100), w_y=(kodiak_spec$sample_factor/100)) #testing H0 D=0?
 
 ks_weighted_result_4 #says do not reject H0, p=.99
+
+
+#testing for small and large scallops separately, to see what happens
+homer_spec_l <- large_spec %>% filter(gear_code==1)
+kodiak_spec_l <- large_spec %>% filter(gear_code==5)
+
+homer_spec_s <- small_spec %>% filter(gear_code==1)
+kodiak_spec_s <- small_spec %>% filter(gear_code==5)
+
+ks_large <-Ecume::ks_test(x=homer_spec_l$shell_height, y=kodiak_spec_l$shell_height, thresh= 0, w_x=(homer_spec_l$sample_factor/100), w_y=(kodiak_spec_l$sample_factor/100)) #should thresh be 0?
+
+ks_small <- Ecume::ks_test(x=homer_spec_s$shell_height, y=kodiak_spec_s$shell_height, thresh= 0, w_x=(homer_spec_s$sample_factor/100), w_y=(kodiak_spec_s$sample_factor/100))
+
+ks_large #do not reject H0, p=.99
+ks_small #do not reject H0, p=0.19
 ```
 
