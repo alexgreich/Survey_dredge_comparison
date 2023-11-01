@@ -151,6 +151,67 @@ ggsave("compound_scallops_regular_cpue_wt.png", plot=compound_reg, width=20, hei
 
 Kodiak: Homer plots
 ```{r}
+restructured_data_l <- large_m %>%
+  group_by(haul, gear_code, reg_area, bed_code) %>%
+  summarise(cpue_wt = sum(cpue_wt)) %>%
+  pivot_wider(names_from = gear_code, values_from = cpue_wt) %>%
+  rename(Haul = haul, Homer_cpue_wt = `1`, Kodiak_cpue_wt = `5`, Reg_Area = reg_area, Bed_Code = bed_code) %>%
+  ungroup()
+
+restructured_data_s <- small_m %>%
+  group_by(haul, gear_code, reg_area, bed_code) %>%
+  summarise(cpue_wt = sum(cpue_wt)) %>%
+  pivot_wider(names_from = gear_code, values_from = cpue_wt) %>%
+  rename(Haul = haul, Homer_cpue_wt = `1`, Kodiak_cpue_wt = `5`, Reg_Area = reg_area, Bed_Code = bed_code) %>%
+  ungroup()
+
+#plot with loess smoother and red 1:1 line
+##large
+ggplot(restructured_data_l) + 
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    geom_smooth(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt)) + geom_point(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt, color=Haul, shape=Reg_Area),size=3) + 
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Large scallops")
+
+##small
+ggplot(restructured_data_s) + 
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    geom_smooth(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt)) + geom_point(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt, color=Haul, shape=Reg_Area),size=3) + 
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops")
+    
+    
+#that again, but logged  
+##large
+ggplot(restructured_data_l) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1))) + geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Large scallops, logged")
+
+##small
+ggplot(restructured_data_s) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1))) + 
+    geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops, logged")
 
 ```
 
@@ -269,3 +330,12 @@ ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=3) +
 ```
 
 DISTRIBUTION PLOTS
+```{r}
+
+```
+
+DISTRIBUTION TESTS
+```{r}
+
+```
+
