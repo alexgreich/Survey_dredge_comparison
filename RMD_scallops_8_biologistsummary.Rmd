@@ -5,6 +5,9 @@ date: "2023-10-31"
 output: html_document
 ---
 
+LOOK BACK AT RE-ORIENTATION NOTES... YOu need to make the default KODAK. MAke everything convert to KODIAK. (which is just 1/homer, but do it right)
+ERASE ENVIRONMENT AND SEE IF EVERYHTING WORKS
+
 ## Take-away message/Abstract
 Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Kolmogorov-Smirnov test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.68 for large scallops and 0.74 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
 
@@ -101,11 +104,11 @@ small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
 
 #code the factors as factors
 large_m <- large_2 %>%
-           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("1","5")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5","1")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
     
 
 small_m <- small_2 %>%
-           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("1", "5")), haul = base::factor(haul)) #levels=c(1,5) ?
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5", "1")), haul = base::factor(haul)) #levels=c(1,5) ?
 
 ```
 
@@ -114,13 +117,13 @@ Exploratory plots
 ```{r}
 
 #logged cpue scale
-log_large_plot <- ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+log_large_plot <- ggplot(large_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
     xlab("Haul")+ ylab("log(CPUE + 1)")+
     ggtitle("Large scallops")+
     labs(shape="Gear type", color= "Bed name")
 
-log_small_plot <- ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=4) + scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+log_small_plot <- ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=bed_name, shape=factor(gear_code)) + geom_point(size=4) + scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot() +
     xlab("Haul")+ ylab("log(CPUE + 1)")+
     ggtitle("Small scallops")+
@@ -131,13 +134,13 @@ compound_log <- log_large_plot/log_small_plot
 ggsave("compound_scallops_log_cpue_wt.png", plot=compound_log, width=20, height=10, units="in")
 
 #regular cpue scale
-large_plot <- ggplot(large_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+large_plot <- ggplot(large_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
     xlab("Haul")+ ylab("CPUE (weight)")+
     ggtitle("Large scallops")+
     labs(shape="Gear type", color= "Bed name")
 
-small_plot <- ggplot(small_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) + scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Homer dredge", "Kodiak dredge"))+
+small_plot <- ggplot(small_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) + scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot() +
     xlab("Haul")+ ylab("CPUE (weight)")+
     ggtitle("Small scallops")+
@@ -312,7 +315,7 @@ scallop_FPC_table$Lower_CI <- lower_CI
 
 scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MSE support this?
 
-
+#homer *c = kodiak QC'ed to here
 ```
 
 Says for large apply the FPC, small do not apply the FPC. But I should look at the MSE results as well.
@@ -339,10 +342,10 @@ f_kapp_AR <- function(data) {
  # cpue2 = data %>% pull(as.name(ves2)) 
   
   #alex code
-  tmp1 = data %>% filter(gear_code==1)
+  tmp1 = data %>% filter(gear_code==5)
   cpue1 <- tmp1$cpue_wt
   
-  tmp2 = data %>% filter(gear_code==5)
+  tmp2 = data %>% filter(gear_code==1)
   cpue2 <- tmp2$cpue_wt
   
   # call fishmethods::fpc
@@ -389,7 +392,7 @@ kapp_wt_L2 <- f_kapp_AR(data=large_m)
 kapp_wt_S2 <- f_kapp_AR(data=small_m)
 ```
 
-MSE sim Kapp - adjsuted from crab github code
+MSE sim Kapp - adjsuted from crab github code #DOES THIS WORK?? I just switched from a homer base perspective to a kodiak base perspective.
 ```{r}
 #AR adjustments
 f_kapp_mse_sim_AR1 <- function(data, n, method){
@@ -413,18 +416,18 @@ f_kapp_mse_sim_AR1 <- function(data, n, method){
   fpd = seq(0.1, 2, 0.1) 
   for(i in 1:length(fpd)){
     for(j in 1:200){
-      # simulate cpue standard vessel aka the Homer dredge
-      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
+      # simulate cpue standard vessel aka the KODIAK dredge
+      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
       # simulate cpue non-standard vessel aka the Kodiak dredge
-      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
+      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
       # estimate FPC
-      fpc <- fpc(cpue1 = hom_sim, cpue2 = kod_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
+      fpc <- fpc(cpue1 = kod_sim, cpue2 = hom_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
       
       # join vessel cpues to one vector
       ## uncorrected
-      survey_u = c(hom_sim, kod_sim)
+      survey_u = c(kod_sim, hom_sim)
       ## corrected
-      survey_c = c(hom_sim, (kod_sim * fpc$FPC))  # scale to standard vessel
+      survey_c = c(kod_sim, (hom_sim * fpc$FPC))  # scale to standard vessel
       
       # compute means of uncorrected and corrected data
       cpue_u[j] = mean(survey_u)
