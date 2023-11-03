@@ -170,7 +170,7 @@ restructured_data_s <- small_m %>%
 
 #plot with loess smoother and red 1:1 line
 ##large
-ggplot(restructured_data_l) + 
+x<- ggplot(restructured_data_l) + 
     geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
     geom_smooth(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt)) + geom_point(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt, color=Haul, shape=Reg_Area),size=3) + 
     theme_cowplot() +
@@ -181,7 +181,7 @@ ggplot(restructured_data_l) +
     ggtitle("Large scallops")
 
 ##small
-ggplot(restructured_data_s) + 
+y<- ggplot(restructured_data_s) + 
     geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
     geom_smooth(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt)) + geom_point(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt, color=Haul, shape=Reg_Area),size=3) + 
     theme_cowplot() +
@@ -190,7 +190,10 @@ ggplot(restructured_data_s) +
     xlab("Kodiak CPUE (weight)")+
     ylab("Homer CPUE (weight)")+
     ggtitle("Small scallops")
-    
+
+homer_kodiak <- x+y
+
+ggsave("homer_vs_kodiak.png", plot=homer_kodiak, width=20, height=10, units="in")
     
 #that again, but logged  
 ##large
@@ -504,16 +507,23 @@ kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
 ```
 
 
-PREDICTION PLOTS 
+PREDICTION PLOTS - 11/3/23 adjusted for Kodiak baseline
 ```{r}
 
 #large scallops fitted values
 fitted_values_test <- predict(mod1_large_wt, type="response")
 large_m$fitted_cpue_wt <- exp(fitted_values_test)-1
 
-ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code, size =3) +
+alpha <- ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code, size =2) +
     geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
-    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
+    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)+
+    theme_cowplot()+
+    ggtitle("Predicted values, large scallops")+
+    ylab("CPUE (weight)")+
+    xlab("Haul")+
+    scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    labs(shape=NULL)+
+    guides(size="none")
 
 
 #small scallops fitted values
@@ -521,9 +531,21 @@ ggplot(large_m) + aes(x=haul, shape=gear_code, group= gear_code, size =3) +
 fitted_values_test <- predict(mod1_small_wt, type="response")
 small_m$fitted_cpue_wt <- exp(fitted_values_test)-1
 
-ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=3) +
+beta <- ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=2) +
     geom_point(aes(y=cpue_wt), color="black", alpha=0.5)+
-    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)
+    geom_point(aes(y=fitted_cpue_wt), color="red", alpha=0.3)+
+    theme_cowplot()+
+    ggtitle("Predicted values, small scallops")+
+    ylab("CPUE (weight)")+
+    xlab("Haul")+
+    scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    labs(shape=NULL)+
+    guides(size="none")
+
+alpha/beta
+#predicted values: homer-kodiak log graph
+
+#predicted values: homer-kodiak unlogged graph
 
 ```
 
