@@ -480,7 +480,7 @@ f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2$fpc) #was FPC
 ```
 
 
-MSE SIM ANOVA using the fpc (which apppears to have the same results as the lm output, when the contrasts are manually set)
+MSE SIM ANOVA using the fpc (which apppears to have the same results as the lm output, when the contrasts are manually set) - QCing now that Kodiak is the baseline. -CRAP. IT LOOKS THE SAME. MAKE SURE CODE IS USING THE KODIAK MEAN!! AND KODIAK SE!!
 ```{r}
 ANOVA_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2)
 f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) #was FPC
