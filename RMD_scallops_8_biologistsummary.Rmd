@@ -665,7 +665,8 @@ xx<- ggplot(restructured_data_l) +
     scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
     xlab("Kodiak CPUE (weight)")+
     ylab("Homer CPUE (weight)")+
-    ggtitle("Large scallops with predictions")
+    ggtitle("Large scallops with predictions")+
+    labs(shape = "Reg area")
 
 ##small
 yy<- ggplot(restructured_data_s) + 
@@ -679,9 +680,10 @@ yy<- ggplot(restructured_data_s) +
     scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
     xlab("Kodiak CPUE (weight)")+
     ylab("Homer CPUE (weight)")+
-    ggtitle("Small scallops with predictions")
+    ggtitle("Small scallops with predictions")+
+    labs(shape = "Reg area")
 
-zz <- xx/yy
+zz <- xx+yy
 ggsave("homer_vs_kodiak_with_pred.png", plot=zz, width=20, height=10, units="in")
 
 #logged scale
@@ -716,7 +718,7 @@ uu<-ggplot(restructured_data_s) +
     ggtitle("Small scallops with predictions, logged")+
     labs(shape="Reg area")
 
-ww<-vv/uu #that worked to combine, without the legends being too werid
+ww<-vv+uu #that worked to combine, without the legends being too werid
 ww
 #save plot
 ggsave("logged_homer_vs_kodiak_withpred.png", plot=ww, width=20, height=10, units="in")
