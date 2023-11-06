@@ -147,8 +147,9 @@ small_plot <- ggplot(small_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, s
     labs(shape="Gear type", color= "Bed name")
 
 compound_reg <- large_plot/small_plot
+compound_reg
 
-ggsave("compound_scallops_regular_cpue_wt.png", plot=compound_reg, width=20, height=10, units="in")
+#ggsave("compound_scallops_regular_cpue_wt.png", plot=compound_reg, width=20, height=10, units="in")
 
 ```
 
@@ -192,8 +193,8 @@ y<- ggplot(restructured_data_s) +
     ggtitle("Small scallops")
 
 homer_kodiak <- x+y
-
-ggsave("homer_vs_kodiak.png", plot=homer_kodiak, width=20, height=10, units="in")
+homer_kodiak
+#ggsave("homer_vs_kodiak.png", plot=homer_kodiak, width=20, height=10, units="in")
     
 #that again, but logged  
 ##large
@@ -224,9 +225,9 @@ b<-ggplot(restructured_data_s) +
     labs(shape="Reg area")
 
 logged_homer_kodiak<-a+b #that worked to combine, without the legends being too werid
-
+logged_homer_kodiak
 #save plot
-ggsave("logged_homer_vs_kodiak.png", plot=logged_homer_kodiak, width=20, height=10, units="in")
+#ggsave("logged_homer_vs_kodiak.png", plot=logged_homer_kodiak, width=20, height=10, units="in")
 
 
 
@@ -615,8 +616,9 @@ beta <- ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=2)
     guides(size="none")
 
 predicted_1 <- alpha/beta
+predicted_1
 
-ggsave("predicted_1.png", plot=predicted_1, width=20, height=10, units="in")
+#ggsave("predicted_1.png", plot=predicted_1, width=20, height=10, units="in")
 
 
 #predicted values: homer-kodiak log graph
@@ -624,6 +626,37 @@ ggsave("predicted_1.png", plot=predicted_1, width=20, height=10, units="in")
 #predicted values: homer-kodiak unlogged graph
 
 ```
+PREDICTED PLOT: Kodaik/homer
+```{r}
+
+#wrong because the order is wrong
+
+fitted_kodiak_l <- large_m %>% filter(gear_code==5) %>%
+    dplyr::select(fitted_cpue_wt)
+fitted_homer_l <- large_m %>% filter(gear_code==1) %>%
+    dplyr::select(fitted_cpue_wt)
+
+
+
+fitted_kodiak_s <- small_m %>% filter(gear_code==5) %>%
+    dplyr::select(fitted_cpue_wt)
+fitted_homer_s <- small_m %>% filter(gear_code==1) %>%
+    dplyr::select(fitted_cpue_wt)
+
+#WRONG BELOW - becasue the order is wrong
+restructured_data_l$fitted_kodiak <- fitted_kodiak_l
+restructured_data_l$fitted_homer <- fitted_homer_l
+
+restructured_data_s$fitted_kodiak <- fitted_kodiak_s
+restructured_data_s$fitted_homer <- fitted_homer_s
+
+
+###ATTEMPT 2
+
+
+```
+
+
 
 DISTRIBUTION PLOTS
 ```{r}
