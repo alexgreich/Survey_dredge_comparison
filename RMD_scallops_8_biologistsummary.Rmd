@@ -629,31 +629,62 @@ predicted_1
 PREDICTED PLOT: Kodaik/homer
 ```{r}
 
-#wrong because the order is wrong
-
-fitted_kodiak_l <- large_m %>% filter(gear_code==5) %>%
-    dplyr::select(fitted_cpue_wt)
-fitted_homer_l <- large_m %>% filter(gear_code==1) %>%
-    dplyr::select(fitted_cpue_wt)
 
 
+restructured_data_l_2 <- large_m %>%
+  group_by(haul, gear_code, reg_area, bed_code) %>%
+  summarise(fitted_cpue_wt = sum(fitted_cpue_wt)) %>%
+  pivot_wider(names_from = gear_code, values_from = fitted_cpue_wt) %>%
+  rename(Haul = haul, Homer_cpue_wt_pred = `1`, Kodiak_cpue_wt_pred = `5`, Reg_Area = reg_area, Bed_Code = bed_code) %>%
+  ungroup()
 
-fitted_kodiak_s <- small_m %>% filter(gear_code==5) %>%
-    dplyr::select(fitted_cpue_wt)
-fitted_homer_s <- small_m %>% filter(gear_code==1) %>%
-    dplyr::select(fitted_cpue_wt)
-
-#WRONG BELOW - becasue the order is wrong
-restructured_data_l$fitted_kodiak <- fitted_kodiak_l
-restructured_data_l$fitted_homer <- fitted_homer_l
-
-restructured_data_s$fitted_kodiak <- fitted_kodiak_s
-restructured_data_s$fitted_homer <- fitted_homer_s
-
-
-###ATTEMPT 2
+restructured_data_s_2 <- small_m %>%
+  group_by(haul, gear_code, reg_area, bed_code) %>%
+  summarise(fitted_cpue_wt = sum(fitted_cpue_wt)) %>%
+  pivot_wider(names_from = gear_code, values_from = fitted_cpue_wt) %>%
+  rename(Haul = haul, Homer_cpue_wt_pred = `1`, Kodiak_cpue_wt_pred = `5`, Reg_Area = reg_area, Bed_Code = bed_code) %>%
+  ungroup()
 
 
+restructured_data_l$homer_cpue_wt_pred <- restructured_data_l_2$Homer_cpue_wt_pred
+restructured_data_l$kodiak_cpue_wt_pred <- restructured_data_l_2$Kodiak_cpue_wt_pred
+
+restructured_data_s$homer_cpue_wt_pred <- restructured_data_s_2$Homer_cpue_wt_pred
+restructured_data_s$kodiak_cpue_wt_pred <- restructured_data_s_2$Kodiak_cpue_wt_pred
+
+
+#obs vs. pred plot: kodiak/homer
+xx<- ggplot(restructured_data_l) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    #geom_smooth(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt)) + 
+    geom_point(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt, color=Haul, shape=Reg_Area),size=3) + 
+    geom_point(aes(x=kodiak_cpue_wt_pred, y=homer_cpue_wt_pred), color="red", alpha=0.4) +
+    geom_line(aes(x=kodiak_cpue_wt_pred, y=homer_cpue_wt_pred), color="red", alpha=0.4) +
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Large scallops with predictions")
+
+##small
+yy<- ggplot(restructured_data_s) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    #geom_smooth(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt)) + 
+    geom_point(aes(x=Kodiak_cpue_wt, y=Homer_cpue_wt, color=Haul, shape=Reg_Area),size=3) + 
+    geom_point(aes(x=kodiak_cpue_wt_pred, y=homer_cpue_wt_pred), color="red", alpha=0.4) +
+    geom_line(aes(x=kodiak_cpue_wt_pred, y=homer_cpue_wt_pred), color="red", alpha=0.4) +
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops with predictions")
+
+zz <- xx/yy
+ggsave("homer_vs_kodiak_with_pred.png", plot=zz, width=20, height=10, units="in")
+
+#logged scale
 ```
 
 
