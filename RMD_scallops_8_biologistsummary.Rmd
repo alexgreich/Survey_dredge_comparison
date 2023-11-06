@@ -324,6 +324,78 @@ scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MS
 Says for large apply the FPC, small do not apply the FPC. But I should look at the MSE results as well.
 
 
+ADD OUTLIER ANALYSIS HERE?? Might beed to go further down?
+Residual plots - some possible outliers but no strong patterns. Normality fails.
+```{r}
+##plot resids
+plot(resid(mod1_large_cnt)) #couple of outliers
+plot(resid(mod1_large_wt))
+plot(resid(mod1_small_cnt)) #couple of outliers
+plot(resid(mod1_small_wt))  #up pattern
+
+
+qqnorm(log(large_m$cpue_wt+1))
+qqnorm(log(small_m$cpue_wt + 1))
+
+#formal normality test
+shapiro.test(log(large_m$cpue_wt+1))
+shapiro.test(log(small_m$cpue_wt+1))
+##both fail the formal normality test...
+#hist(log(large_m$cpue_wt+1))
+hist(log(large$cpue_wt+1))
+
+
+
+#plot outliers
+plot(mod1_large_wt) #21 and 22 appear to be outliers, This is haul #29. Kodiak caught 2, homer caught 0.
+plot(mod1_small_wt) #24, 35, 36, and 23 are outliers. These are hauls 41(indices 23 and 24; kodiak caught 0) and 71(indices 35 and 36; homer caught 0)
+plot(mod1_large_cnt)
+plot(mod1_small_cnt)
+
+#what if I remove the outliers?
+no_outliers_l <- large_m[-c(21,22),]
+no_outliers_s <- small_m[-c(23,24,35,36),]
+
+shapiro.test(log(no_outliers_l$cpue_wt+1))
+#fails normality test
+shapiro.test(log(no_outliers_s$cpue_wt+1))
+#passes normaliy test, barely
+
+#do results change if I remove the outliers?
+mod1_large_wt_nooutliers <- lm(log(cpue_wt+1) ~ gear_code + haul, data=no_outliers_l)
+sum_o<-summary(mod1_large_wt_nooutliers)
+
+s_large_wt_o <- sum_o$coefficients[2,2]  #SE for large scallops
+g_large_wt_o <- sum_o$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_large_wt_o <- exp(2*g_large_wt_o*(1+(0.5*(s_large_wt_o^2)))) 
+
+upper_CI_large_wt_no_outliers <- exp(2*g_large_wt_o + 1.96*2*s_large_wt_o)
+lower_CI_large_wt_no_outliers <- exp(2*g_large_wt_o - 1.96*2*s_large_wt_o)
+
+FPC_large_wt_o
+upper_CI_large_wt_no_outliers
+lower_CI_large_wt_no_outliers #same results, apply FPC. More precision though
+
+#small no outliers
+mod1_small_wt_nooutliers  <- lm(log(cpue_wt+1) ~ gear_code + haul, data=no_outliers_s)
+sum_o_s<-summary(mod1_small_wt_nooutliers)
+
+s_small_wt_o <- sum_o_s$coefficients[2,2]  #SE for large scallops
+g_small_wt_o <- sum_o_s$coefficients[2,1] #gear difference parameter for large scallops
+
+FPC_small_wt_o <- exp(2*g_small_wt_o*(1+(0.5*(s_small_wt_o^2)))) 
+
+upper_CI_small_wt_no_outliers <- exp(2*g_small_wt_o + 1.96*2*s_small_wt_o)
+lower_CI_small_wt_no_outliers <- exp(2*g_small_wt_o - 1.96*2*s_small_wt_o)
+
+scallop_FPC_table_2 <- rbind(scallop_FPC_table, c("large no outliers (weight)", FPC_large_wt_o, upper_CI_large_wt_no_outliers, lower_CI_large_wt_no_outliers))
+
+scallop_FPC_table_3 <- rbind(scallop_FPC_table_2, c("small no outliers (weight)", FPC_small_wt_o, upper_CI_small_wt_no_outliers, lower_CI_small_wt_no_outliers))
+
+scallop_FPC_table_3
+```
+
 
 #Kappeman
 
@@ -542,7 +614,11 @@ beta <- ggplot(small_m) + aes(x=haul, shape=gear_code, group= gear_code, size=2)
     labs(shape=NULL)+
     guides(size="none")
 
-alpha/beta
+predicted_1 <- alpha/beta
+
+ggsave("predicted_1.png", plot=predicted_1, width=20, height=10, units="in")
+
+
 #predicted values: homer-kodiak log graph
 
 #predicted values: homer-kodiak unlogged graph
@@ -551,22 +627,23 @@ alpha/beta
 
 DISTRIBUTION PLOTS
 ```{r}
-hist(specimen$sample_factor) #so lots of low numbers for the sample factor. Many hauls had few scallops.
+aa<-hist(specimen$sample_factor) #so lots of low numbers for the sample factor. Many hauls had few scallops.
 
-ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +
+bb<-ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + geom_density(aes(weight=sample_factor)) +
 #facet_wrap(~gear_code, ncol=1) +
 theme_cowplot()+ 
 scale_color_manual(values = c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+
 xlab("Shell height")+
 ylab("Density")+
 ggtitle("Shell height density, all scallop sizes")+
-labs(color=NULL)
+labs(color=NULL)+
+    theme_cowplot()
 
 #separated into large and small
 large_spec <- specimen %>% filter(samp_grp == 1)
 small_spec <- specimen %>% filter(samp_grp == 2)
 
-ggplot(large_spec) + 
+cc<-ggplot(large_spec) + 
     aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + 
     geom_density(aes(weight=sample_factor)) +
     theme_cowplot()+
@@ -576,7 +653,7 @@ ggplot(large_spec) +
     labs(color=NULL)+
     ggtitle("Shell height density, large scallops")
 
-ggplot(small_spec) +
+dd<-ggplot(small_spec) +
     aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + 
     geom_density(aes(weight=sample_factor)) +
     theme_cowplot()+
@@ -587,6 +664,15 @@ ggplot(small_spec) +
     ggtitle("Shell height density, small scallops")
 
     
+aa
+bb
+cc
+dd
+
+ccdd <- cc/dd
+
+ggsave("dist_total.png", plot=bb, width=20, height=10, units="in")
+ggsave("dist_sep.png", plot=ccdd, width=15, height=10, units="in")
 
 
 ```
