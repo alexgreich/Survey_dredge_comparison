@@ -685,6 +685,43 @@ zz <- xx/yy
 ggsave("homer_vs_kodiak_with_pred.png", plot=zz, width=20, height=10, units="in")
 
 #logged scale
+##large
+vv<-ggplot(restructured_data_l) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+    #geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1)), method="lm") + 
+    geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
+    geom_point(aes(x=log(kodiak_cpue_wt_pred+1), y=log(homer_cpue_wt_pred+1)), color="red", alpha=0.4) +
+    geom_line(aes(x=log(kodiak_cpue_wt_pred+1), y=log(homer_cpue_wt_pred+1)), color="red", alpha=0.4) +
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    #scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Large scallops with predictions, logged")+
+    labs(shape = "Reg area")#+
+    #guides(shape=FALSE, color=FALSE)
+
+##small
+uu<-ggplot(restructured_data_s) + 
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "red")+
+   # geom_smooth(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1)), method="lm") + 
+    geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
+    geom_point(aes(x=log(kodiak_cpue_wt_pred+1), y=log(homer_cpue_wt_pred+1)), color="red", alpha=0.4) +
+    geom_line(aes(x=log(kodiak_cpue_wt_pred+1), y=log(homer_cpue_wt_pred+1)), color="red", alpha=0.4) +
+    theme_cowplot() +
+    scale_color_viridis(discrete=T)+
+    #scale_shape_manual(values=c(19, 17, 15), labels=c("D", "E", "K"))+
+    xlab("Kodiak CPUE (weight)")+
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops with predictions, logged")+
+    labs(shape="Reg area")
+
+ww<-vv/uu #that worked to combine, without the legends being too werid
+ww
+#save plot
+ggsave("logged_homer_vs_kodiak_withpred.png", plot=ww, width=20, height=10, units="in")
+
+
 ```
 
 
