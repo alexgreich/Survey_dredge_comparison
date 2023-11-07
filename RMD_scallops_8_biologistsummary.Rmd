@@ -130,8 +130,9 @@ log_small_plot <- ggplot(small_m) + aes(x=factor(haul), y=log(cpue_wt+1), color=
     labs(shape="Gear type", color= "Bed name")
 
 compound_log <- log_large_plot/log_small_plot
+compound_log
 
-ggsave("compound_scallops_log_cpue_wt.png", plot=compound_log, width=20, height=10, units="in")
+#ggsave("compound_scallops_log_cpue_wt.png", plot=compound_log, width=20, height=10, units="in")
 
 #regular cpue scale
 large_plot <- ggplot(large_m) + aes(x=factor(haul), y=cpue_wt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
@@ -561,10 +562,21 @@ MSE SIM ANOVA using the fpc (which apppears to have the same results as the lm o
 ```{r}
 ANOVA_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2)
 f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) #was FPC
-##says dont use FPC(because it increases error) 
+ 
 
 ANOVA_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
 f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt)
+
+##save the plots
+png("MSE_large_scallops_ANOVA.png")
+f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) 
+dev.off()
+
+png("MSE_small_scallops_ANOVA.png")
+f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt) 
+dev.off()
+
+
 ```
 
 
@@ -775,8 +787,11 @@ dd
 
 ccdd <- cc/dd
 
-ggsave("dist_total.png", plot=bb, width=20, height=10, units="in")
-ggsave("dist_sep.png", plot=ccdd, width=15, height=10, units="in")
+bb
+ccdd
+
+#ggsave("dist_total.png", plot=bb, width=20, height=10, units="in")
+#ggsave("dist_sep.png", plot=ccdd, width=15, height=10, units="in")
 
 
 ```
