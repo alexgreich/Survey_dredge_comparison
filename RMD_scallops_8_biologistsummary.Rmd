@@ -240,19 +240,16 @@ logged_homer_kodiak
 
 ### ANOVA method
 ```{r}
-options(contrasts = rep("contr.sum", 2)) #to use this or not?????
-#options(contrasts = rep("contr.treatment", 2)) #oh. This way does not give me the grand mean as the intercept.
+options(contrasts = rep("contr.sum", 2)) #use this.
+#options(contrasts = rep("contr.treatment", 2)) #This way does not give me the grand mean as the intercept.
 #log(cpue+1) ~ grand mean + net effect (KENAI OR HOMER) + haul effect (HAUL #)
 ##large scallops
-#large_m$gear_code <- relevel(large_m$gear_code, ref="5") #triedd this, decided no
+#large_m$gear_code <- relevel(large_m$gear_code, ref="5") #tried this, decided no
 
-mod1_large_wt <- stats::lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m) #things are different after this runs through. What has happened?
-#haul is somewhere? the nammes are named somethign different?
-#something about running fishmethods::fpc with method=2 (randomized block anova) messes with the lm function.
+mod1_large_wt <- stats::lm(log(cpue_wt+1) ~ gear_code + haul, data=large_m) 
 
 mod1_large_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
-#mod1_large_cnt_TEST <- aov(log(cpue_cnt+1) ~ grand_mean_cpue_wt + gear_code + haul, data=large_m)
-##same same, different way
+
 
 ##small scallops
 mod1_small_wt <- lm(log(cpue_wt+1) ~ gear_code + haul, data=small_m)
@@ -323,10 +320,9 @@ scallop_FPC_table #apply FPC for large scallops, but not small scallops. Does MS
 #homer *c = kodiak QC'ed to here
 ```
 
-Says for large apply the FPC, small do not apply the FPC. But I should look at the MSE results as well.
 
 
-ADD OUTLIER ANALYSIS HERE?? Might beed to go further down?
+Outlier analysis
 Residual plots - some possible outliers but no strong patterns. Normality fails.
 ```{r}
 ##plot resids
@@ -469,19 +465,20 @@ kapp_wt_L2 <- f_kapp_AR(data=large_m)
 kapp_wt_S2 <- f_kapp_AR(data=small_m)
 ```
 
-MSE sim Kapp - adjsuted from crab github code #DOES THIS WORK?? I just switched from a homer base perspective to a kodiak base perspective. ##Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? THAT IS THE QUESTION. 
-- ok. and I think I have the answer. We want the sim to look at the total Cpue without correction. So we don't just look at the kodiak baseline then.
+MSE sim Kapp - adjsuted from crab github code I just switched from a homer base perspective to a kodiak base perspective. ##Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? 
+
 ```{r}
 #AR adjustments
-f_kapp_mse_sim_AR1 <- function(data, n, method){ ##Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? THAT IS THE QUESTION.
+f_kapp_mse_sim_AR1 <- function(data, n, method){ ##Should this function use both homer and kodiak cpue data or just kodiak cpue data?? 
   
   # pull cpue from data
   data %>%
-    pull(cpue_wt) -> cpue  #should this be all the cpue or just for the uncorrected? Reference back to Tyler code?
+    pull(cpue_wt) -> cpue  #should this be all the cpue or just for the uncorrected? 
     
   # compute parameters of lognormal dist
-  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2) #ok if this is global? OR should these values be just for Kodiak?? We use tge total CPUE to calc the correction?? Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? THAT IS THE QUESTION.
-  var = log(1+(sd(cpue)/mean(cpue))^2) #ah. for the bootstrap. AR.
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2) #ok if this is global? OR should these values be just for Kodiak?? We use the total CPUE to calc the correction?? Should this function use both homer and kodiak cpue data or just kodiak cpue data?? 
+  
+  var = log(1+(sd(cpue)/mean(cpue))^2) 
   
   # check pdf
   #hist(cpue, freq = F)
@@ -542,26 +539,23 @@ f_sim_plot <- function(data, fpc){
   return(x)
 }
 
-#test
-#test_large <- f_kapp_mse_sim_AR1(data=large_m, n=10, method=4) #what should n be? 48 is the number of hauls (sample size 96)
-#f_sim_plot(data=test_large, fpc=FPC_large_wt) #need to chage the fpc to a kapp value, this is the anova output. Kapp value is about 0.84
 
 #kapp
 kapp_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=4)
 f_sim_plot(data=kapp_mse_large, fpc=kapp_wt_L2$fpc) #was FPC
-##says dont use FPC(because it increases error) 
+
 
 kapp_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=4)
 f_sim_plot(data=kapp_mse_small, fpc=kapp_wt_S2$fpc) #was FPC
-#borderline
+
 
 ```
 
 
-MSE SIM ANOVA using the fpc (which apppears to have the same results as the lm output, when the contrasts are manually set) - QCing now that Kodiak is the baseline. -CRAP. IT LOOKS THE SAME. MAKE SURE CODE IS USING THE KODIAK MEAN!! AND KODIAK SE!!
+MSE SIM ANOVA using the fpc.
 ```{r}
 ANOVA_mse_large <- f_kapp_mse_sim_AR1(data=large_m, n=48, method=2)
-f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) #was FPC
+f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) 
  
 
 ANOVA_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
@@ -584,12 +578,12 @@ CONCLUSION TABLES
 Summary table
 ```{r}
 #randomized block ANOVA results (weight and number cpue)
-scallop_FPC_table_3 #the one includign outlier results #DOES THIS ONE WORK WHEN EVERYTHING RESET??
+scallop_FPC_table_3 #the one includign outlier results 
 
 
 #kapp results (weight cpue)
 kapp_wt_L2 
-kapp_wt_S2 #wait mean cpue 1 is larger? Is that right??
+kapp_wt_S2 
 ```
 
 
@@ -634,9 +628,6 @@ predicted_1
 #ggsave("predicted_1.png", plot=predicted_1, width=20, height=10, units="in")
 
 
-#predicted values: homer-kodiak log graph
-
-#predicted values: homer-kodiak unlogged graph
 
 ```
 PREDICTED PLOT: Kodaik/homer
@@ -697,7 +688,7 @@ yy<- ggplot(restructured_data_s) +
     labs(shape = "Reg area")
 
 zz <- xx+yy
-ggsave("homer_vs_kodiak_with_pred.png", plot=zz, width=20, height=10, units="in")
+#ggsave("homer_vs_kodiak_with_pred.png", plot=zz, width=20, height=10, units="in")
 
 #logged scale
 ##large
@@ -734,7 +725,7 @@ uu<-ggplot(restructured_data_s) +
 ww<-vv+uu #that worked to combine, without the legends being too werid
 ww
 #save plot
-ggsave("logged_homer_vs_kodiak_withpred.png", plot=ww, width=20, height=10, units="in")
+#ggsave("logged_homer_vs_kodiak_withpred.png", plot=ww, width=20, height=10, units="in")
 
 
 ```
