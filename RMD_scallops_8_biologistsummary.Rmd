@@ -8,7 +8,7 @@ output: html_document
 LOOK BACK AT RE-ORIENTATION NOTES... YOu need to make the default KODAK. MAke everything convert to KODIAK. (which is just 1/homer, but do it right)
 ERASE ENVIRONMENT AND SEE IF EVERYHTING WORKS
 
-## Take-away message/Abstract
+## Take-away message/Abstract NEED TO UPDATE
 Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Kolmogorov-Smirnov test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.68 for large scallops and 0.74 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
 
 The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
@@ -468,17 +468,18 @@ kapp_wt_L2 <- f_kapp_AR(data=large_m)
 kapp_wt_S2 <- f_kapp_AR(data=small_m)
 ```
 
-MSE sim Kapp - adjsuted from crab github code #DOES THIS WORK?? I just switched from a homer base perspective to a kodiak base perspective.
+MSE sim Kapp - adjsuted from crab github code #DOES THIS WORK?? I just switched from a homer base perspective to a kodiak base perspective. ##Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? THAT IS THE QUESTION. 
+- ok. and I think I have the answer. We want the sim to look at the total Cpue without correction. So we don't just look at the kodiak baseline then.
 ```{r}
 #AR adjustments
-f_kapp_mse_sim_AR1 <- function(data, n, method){
+f_kapp_mse_sim_AR1 <- function(data, n, method){ ##Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? THAT IS THE QUESTION.
   
   # pull cpue from data
   data %>%
     pull(cpue_wt) -> cpue  #should this be all the cpue or just for the uncorrected? Reference back to Tyler code?
     
   # compute parameters of lognormal dist
-  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2) #ok if this is global? OR should these values be just for Kodiak?? We use tge total CPUE to calc the correction?? Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? THAT IS THE QUESTION.
   var = log(1+(sd(cpue)/mean(cpue))^2) #ah. for the bootstrap. AR.
   
   # check pdf
@@ -493,11 +494,11 @@ f_kapp_mse_sim_AR1 <- function(data, n, method){
   for(i in 1:length(fpd)){
     for(j in 1:200){
       # simulate cpue standard vessel aka the KODIAK dredge
-      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for HOMER
+      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for KODIAK(updated) #SHOULD THIS INDICATE ACTUAL mu values for kodiak??
       # simulate cpue non-standard vessel aka the Kodiak dredge
-      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for KODIAK
+      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for HOMER(updated)
       # estimate FPC
-      fpc <- fpc(cpue1 = kod_sim, cpue2 = hom_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans)
+      fpc <- fpc(cpue1 = kod_sim, cpue2 = hom_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans). I altered here to make kodiak the default
       
       # join vessel cpues to one vector
       ## uncorrected
