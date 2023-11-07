@@ -9,17 +9,17 @@ LOOK BACK AT RE-ORIENTATION NOTES... YOu need to make the default KODAK. MAke ev
 ERASE ENVIRONMENT AND SEE IF EVERYHTING WORKS
 
 ## Take-away message/Abstract NEED TO UPDATE
-Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Kolmogorov-Smirnov test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 0.68 for large scallops and 0.74 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA looks bad for the higher CPUE hauls.
+Apply an FPC for large scallops, but not for small scallops. The size distribution of catch between the Homer and Kodiak dredges are similar, according to the Kolmogorov-Smirnov test. I've identified 2 outliers for the large scallops and 4 outliers for the small scallops. (Hauls where both values are 0 were eliminated from analysis.) Using the CPUE based on weight for analysis, the FPC for a Kodiak to Homer dredge conversion was 1.47 for large scallops and 1.36 for small scallops. Only the large scallops had a confidence interval that did not overlap with one. The plot of predicted values over observed values for the ANOVA has lower accuracy and precision for the higher CPUE hauls.
 
-The results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
+QC!! ->  results of the MSE simulation indicate that the MSE is reduced when both the large and small scallop FPC's are applied.
 
-Since the large scallop FPC has CI's that do not overlap with one and reduces MSE, my analysis indicates that we should apply the FPC to the large scallops dataset. The small scallop FPC had CI's that did overlap with 1.
+Since the large scallop FPC has CI's that do not overlap with one and reduces MSE, the randomized block ANOVA analysis indicates that we should apply the FPC to the large scallops dataset. The small scallop FPC had CI's that did overlap with 1.
 
-Normality: does not look terrible terrible when graphed but also does not look great. According to the Shapiro-Wilk test, both large and small scallop datasets are non-normal. When outliers are removed, the large scallop dataset is non-normal and the small scallop dataset is normal, according to the Shapiro-Wilk test. Since the randomized block ANOVA assumes normality, this could be an indication to pick a different analysis method.
+I also tried the Kappenman's method. FPC was 1.20 for large scallops and 1.37 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted and paired hauls are not accounted for, which is undesirable here. 
 
-I also tried the Kappenman's method. It had more conservative results. FPC was 0.84 for large scallops and 0.73 for small scallops (using the weight-based CPUE for calculation). Both CI's for the large and small scallop Kappenman FPC's overlap with one, indicating FPC's should not be accepted. This test does not assume normality, which is a plus. However, CPUE's of 0 are deleted and paired hauls are not accounted for, which is undesirable here. How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? They are all outliers...
+How important are the paired hauls where one net got 0? Is that a fluke? Should those hauls be removed from analysis? 
 
-In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops. This could be something to ask the scallop team about.
+In future iterations of analysis, I may want to eliminate the outliers? The outliers occur when one dredge catches 0 scallops and the other one catches not zero scallops.
 
 Results after outliers are removed:
 - ANOVA: a higher precision. See table. After removing the outliers, both small and large scallops have confidence intervals outside of 1.
