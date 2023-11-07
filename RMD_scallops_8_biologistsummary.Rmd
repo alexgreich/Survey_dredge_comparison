@@ -475,7 +475,7 @@ f_kapp_mse_sim_AR1 <- function(data, n, method){
   
   # pull cpue from data
   data %>%
-    pull(cpue_wt) -> cpue  
+    pull(cpue_wt) -> cpue  #should this be all the cpue or just for the uncorrected? Reference back to Tyler code?
     
   # compute parameters of lognormal dist
   mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2)
