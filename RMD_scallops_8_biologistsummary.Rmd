@@ -497,7 +497,7 @@ f_kapp_mse_sim_AR1 <- function(data, n, method){ ##Should this function use both
       hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for HOMER(updated)
       # estimate FPC
       fpc <- fpc(cpue1 = kod_sim, cpue2 = hom_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans). I altered here to make kodiak the default
-      
+
       # join vessel cpues to one vector
       ## uncorrected
       survey_u = c(kod_sim, hom_sim)
@@ -562,13 +562,13 @@ ANOVA_mse_small <- f_kapp_mse_sim_AR1(data=small_m, n=48, method=2)
 f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt)
 
 ##save the plots
-png("MSE_large_scallops_ANOVA.png")
-f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) 
-dev.off()
+#png("MSE_large_scallops_ANOVA.png")
+#f_sim_plot(data=ANOVA_mse_large, fpc=FPC_large_wt) 
+#dev.off()
 
-png("MSE_small_scallops_ANOVA.png")
-f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt) 
-dev.off()
+#png("MSE_small_scallops_ANOVA.png")
+#f_sim_plot(data=ANOVA_mse_small, fpc=FPC_small_wt) 
+#dev.off()
 
 
 ```
@@ -815,5 +815,38 @@ ks_small <- Ecume::ks_test(x=homer_spec_s$shell_height, y=kodiak_spec_s$shell_he
 
 ks_large #do not reject H0, p=.99
 ks_small #do not reject H0, p=0.19
+```
+
+# Further extensions
+
+## graph distribution by area
+```{r}
+hh<-ggplot(large_spec) + 
+    aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + 
+    geom_density(aes(weight=sample_factor)) +
+    theme_cowplot()+
+    scale_color_manual(values=c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+
+    xlab("Shell height")+
+    ylab("Density")+
+    labs(color=NULL)+
+    ggtitle("Shell height density, large scallops")+
+    facet_wrap(~reg_area)
+
+ii<-ggplot(small_spec) +
+    aes(x=shell_height, color=factor(gear_code), group=factor(gear_code)) + 
+    geom_density(aes(weight=sample_factor)) +
+    theme_cowplot()+
+    scale_color_manual(values=c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+
+    xlab("Shell height")+
+    ylab("Density")+
+    labs(color=NULL)+
+    ggtitle("Shell height density, small scallops")+
+    facet_wrap(~reg_area)
+
+jj<- hh/ii
+jj
+
+
+#ggsave("dist_by_area.png", plot=jj, width=20, height=10, units="in")
 ```
 
