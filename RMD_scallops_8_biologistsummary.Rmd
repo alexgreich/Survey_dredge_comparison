@@ -40,7 +40,7 @@ library(fishmethods)
 library(viridis)
 library(patchwork)
 
-set.seed(123)
+set.seed(401)
 ```
 
 
@@ -848,5 +848,34 @@ jj
 
 
 #ggsave("dist_by_area.png", plot=jj, width=20, height=10, units="in")
+```
+
+
+Try graphing: Homer old cpue vs. hOmer corrected cPUE
+Is this a better way of showing results than The predicted values? 
+MAybe...
+```{r}
+#large
+names(restructured_data_l)
+Homer_FPC_applied <- restructured_data_l$Homer_cpue_wt*FPC_large_wt
+restructured_data_l$Homer_FPC_applied <- Homer_FPC_applied
+
+hist(restructured_data_l$Homer_FPC_applied)
+hist(restructured_data_l$Homer_cpue_wt)
+
+ggplot(restructured_data_l)+
+    geom_density(aes(x=Homer_FPC_applied), color="blue")+
+    geom_density(aes(x=Homer_cpue_wt), color="red")
+
+ggplot(restructured_data_l)+
+    geom_smooth(aes(x=Homer_cpue_wt, y=Kodiak_cpue_wt), color="blue", method="lm") +
+    geom_smooth(aes(x=Homer_FPC_applied, y=Kodiak_cpue_wt), color="red", method="lm")+
+    geom_point(aes(x=Homer_cpue_wt, y=Kodiak_cpue_wt), color="blue")+
+    geom_point(aes(x=Homer_FPC_applied, y=Kodiak_cpue_wt), color="red")
+
+
+#mall
+Homer_FPC_applied <- restructured_data_s$Homer_cpue_wt*FPC_small_wt
+restructured_data_s$Homer_FPC_applied <- Homer_FPC_applied
 ```
 
