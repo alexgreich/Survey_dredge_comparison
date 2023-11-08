@@ -854,6 +854,7 @@ jj
 Try graphing: Homer old cpue vs. hOmer corrected cPUE
 Is this a better way of showing results than The predicted values? 
 MAybe...
+NEXT: Make this plot by shaoe an haul, like the OG?
 ```{r}
 #large
 names(restructured_data_l)
@@ -867,15 +868,67 @@ ggplot(restructured_data_l)+
     geom_density(aes(x=Homer_FPC_applied), color="blue")+
     geom_density(aes(x=Homer_cpue_wt), color="red")
 
-ggplot(restructured_data_l)+
-    geom_smooth(aes(x=Homer_cpue_wt, y=Kodiak_cpue_wt), color="blue", method="lm") +
-    geom_smooth(aes(x=Homer_FPC_applied, y=Kodiak_cpue_wt), color="red", method="lm")+
-    geom_point(aes(x=Homer_cpue_wt, y=Kodiak_cpue_wt), color="blue")+
-    geom_point(aes(x=Homer_FPC_applied, y=Kodiak_cpue_wt), color="red")
+kk<- ggplot(restructured_data_l)+ #SWAP THE X AND Y
+    geom_smooth(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue", method="lm") +
+    geom_smooth(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange", method="lm")+
+    geom_point(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue")+
+    geom_point(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange")+
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    theme_cowplot()+
+    xlab("Kodiak CPUE (weight)") +
+    ylab("Homer CPUE (weight)") +
+    ggtitle("Large scallops")
 
 
 #mall
 Homer_FPC_applied <- restructured_data_s$Homer_cpue_wt*FPC_small_wt
 restructured_data_s$Homer_FPC_applied <- Homer_FPC_applied
+
+
+ll<- ggplot(restructured_data_s)+ #SWAP THE X AND Y
+    geom_smooth(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue", method="lm") +
+    geom_smooth(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange", method="lm")+
+    geom_point(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue")+
+    geom_point(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange")+
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    theme_cowplot()+
+    xlab("Kodiak CPUE (weight)") +
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops")
+
+mm<- kk +ll
+mm
+
+#ggsave("FPC_applied_values.png", plot=mm, width=20, height=10, units="in")
+
+
+#add some color
+
+##BELOW - finish up this graph - take away-  maybe different FPC's per reg area? do we have enough data for that?
+ggplot(restructured_data_l)+ #SWAP THE X AND Y
+    geom_smooth(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue", method="lm") +
+    geom_smooth(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange", method="lm")+
+    geom_point(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue")+
+    geom_point(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt, color=Haul, shape=Reg_Area), size=3)+
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    theme_cowplot()+
+    xlab("Kodiak CPUE (weight)") +
+    ylab("Homer CPUE (weight)") +
+    ggtitle("Large scallops")
+
+
+#geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
+
+ggplot(restructured_data_s)+ #SWAP THE X AND Y
+    geom_smooth(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue", method="lm") +
+    geom_smooth(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange", method="lm")+
+    geom_point(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue")+
+    geom_point(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="orange")+
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    theme_cowplot()+
+    xlab("Kodiak CPUE (weight)") +
+    ylab("Homer CPUE (weight)")+
+    ggtitle("Small scallops")
+
 ```
 
