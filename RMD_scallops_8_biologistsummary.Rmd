@@ -629,6 +629,9 @@ predicted_1
 
 
 
+
+
+
 ```
 PREDICTED PLOT: Kodaik/homer
 ```{r}
@@ -906,11 +909,12 @@ mm
 
 ##BELOW - finish up this graph - take away-  maybe different FPC's per reg area? do we have enough data for that?
 mm<- ggplot(restructured_data_l)+ #SWAP THE X AND Y
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
     geom_smooth(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue", method="lm", size=0.3, se=F) +
     geom_smooth(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="red", method="lm", alpha=0.3, size=0.3, se=F)+
     geom_point(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt, color=Haul, shape=Reg_Area), size = 3)+
     geom_point(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="red", alpha=0.3, size=1.5)+
-    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
     theme_cowplot()+
     xlab("Kodiak CPUE (weight)") +
     ylab("Homer CPUE (weight)") +
@@ -922,11 +926,12 @@ mm<- ggplot(restructured_data_l)+ #SWAP THE X AND Y
 #geom_point(aes(x=log(Kodiak_cpue_wt+1), y=log(Homer_cpue_wt+1), color=Haul, shape=Reg_Area),size=3) + 
 
 nn<- ggplot(restructured_data_s)+ #SWAP THE X AND Y
+    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
     geom_smooth(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt), color="blue", method="lm", size=0.3, se=F) +
     geom_smooth(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="red", method="lm", alpha=0.3, size=0.3, se=F)+
     geom_point(aes(y=Homer_cpue_wt, x=Kodiak_cpue_wt, color=Haul, shape=Reg_Area), size = 3)+
     geom_point(aes(y=Homer_FPC_applied, x=Kodiak_cpue_wt), color="red", alpha=0.3, size=1.5)+
-    geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
     theme_cowplot()+
     xlab("Kodiak CPUE (weight)") +
     ylab("Homer CPUE (weight)") +
@@ -937,9 +942,81 @@ nn<- ggplot(restructured_data_s)+ #SWAP THE X AND Y
 oo <- mm + nn
 oo
 
-ggsave("original_and_FPC_mod.png", plot=oo, width=20, height=10, units="in")
+#ggsave("original_and_FPC_mod.png", plot=oo, width=20, height=10, units="in")
 
 #logged version
+qq<- ggplot(restructured_data_l)+ #SWAP THE X AND Y
+    geom_smooth(aes(y=log(Homer_cpue_wt+1), x=log(Kodiak_cpue_wt+1)), color="blue", method="lm", size=0.3, se=F) +
+    geom_smooth(aes(y=log(Homer_FPC_applied+1), x=log(Kodiak_cpue_wt+1)), color="red", method="lm", alpha=0.3, size=0.3, se=F)+
+    geom_point(aes(y=log(Homer_cpue_wt+1), x=log(Kodiak_cpue_wt+1), color=Haul, shape=Reg_Area), size = 3)+
+    geom_point(aes(y=log(Homer_FPC_applied+1), x=log(Kodiak_cpue_wt+1)), color="red", alpha=0.3, size=1.5)+
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    theme_cowplot()+
+    xlab("Kodiak CPUE (weight)") +
+    ylab("Homer CPUE (weight)") +
+    ggtitle("Large scallops")+
+    scale_color_viridis(discrete=T)+
+    labs(shape="Reg area")
+
+rr<-  ggplot(restructured_data_s)+ #SWAP THE X AND Y
+    geom_smooth(aes(y=log(Homer_cpue_wt+1), x=log(Kodiak_cpue_wt+1)), color="blue", method="lm", size=0.3, se=F) +
+    geom_smooth(aes(y=log(Homer_FPC_applied+1), x=log(Kodiak_cpue_wt+1)), color="red", method="lm", alpha=0.3, size=0.3, se=F)+
+    geom_point(aes(y=log(Homer_cpue_wt+1), x=log(Kodiak_cpue_wt+1), color=Haul, shape=Reg_Area), size = 3)+
+    geom_point(aes(y=log(Homer_FPC_applied+1), x=log(Kodiak_cpue_wt+1)), color="red", alpha=0.3, size=1.5)+
+    #geom_abline(intercept=0, slope=1, linetype="dashed", color= "green")+
+    theme_cowplot()+
+    xlab("Kodiak CPUE (weight)") +
+    ylab("Homer CPUE (weight)") +
+    ggtitle("Small scallops")+
+    scale_color_viridis(discrete=T)+
+    labs(shape="Reg area")
+
+ss <- qq+rr
+ss
+
+#ggsave("original_and_FPC_mod_log.png", plot=ss, width=20, height=10, units="in")
+
+
+```
+
+
+One more FPC transformed graph
+```{r}
+#long_fpc_tranformed_data <-  restructured_data_l %>%
+ # pivot_longer(cols = c(Homer_cpue_wt, Kodiak_cpue_wt),
+  #             names_to = "gear_code",
+   #            values_to = "cpue_wt")
+
+
+aaa<- ggplot() + #aes(x=haul, shape=gear_code, group= gear_code, size =2) +
+    geom_point(aes(y=cpue_wt, x=haul, shape=gear_code), data=large_m, color="black", alpha=0.5, size=3)+
+    geom_point(aes(y=Homer_FPC_applied, x=Haul), data=restructured_data_l, color="red", alpha=0.3, size=3, shape=15)+
+    theme_cowplot()+
+    ggtitle("Original and FPC-tranformed CPUE values, large scallops")+
+    ylab("CPUE (weight)")+
+    xlab("Haul")+
+    scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    labs(shape=NULL)+
+    guides(size="none")
+
+
+bbb<- ggplot() + #aes(x=haul, shape=gear_code, group= gear_code, size =2) +
+    geom_point(aes(y=cpue_wt, x=haul, shape=gear_code), data=small_m, color="black", alpha=0.5, size=3)+
+    geom_point(aes(y=Homer_FPC_applied, x=Haul), data=restructured_data_s, color="red", alpha=0.3, size=3, shape=15)+
+    theme_cowplot()+
+    ggtitle("Original and FPC-tranformed CPUE values, small scallops")+
+    ylab("CPUE (weight)")+
+    xlab("Haul")+
+    scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    labs(shape=NULL)+
+    guides(size="none")
+
+
+ccc <- aaa/bbb
+
+ccc
+
+#ggsave("original_and_trans_FPC_CPUE.png", plot=ccc, width=20, height=10, units="in")
 
 ```
 
