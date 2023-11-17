@@ -466,7 +466,7 @@ kapp_wt_S2 <- f_kapp_AR(data=small_m)
 ```
 
 MSE sim Kapp - adjsuted from crab github code I just switched from a homer base perspective to a kodiak base perspective. ##Should this fucntion use both homer and kodiak cpue data or just kodiak cpue data?? 
-
+Increase iterations (where the i:200 is) before finalziing graphs
 ```{r}
 #AR adjustments
 f_kapp_mse_sim_AR1 <- function(data, n, method){ ##Should this function use both homer and kodiak cpue data or just kodiak cpue data?? 

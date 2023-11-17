@@ -1,0 +1,138 @@
+---
+title: "RMD_scallops_postmeeting"
+author: "Alex Reich"
+date: "2023-11-15"
+output: html_document
+---
+
+## Take-away message/
+
+PLOT TWIST: repairs made to the homer dredge in the middle of the survey. This seemed to drastically impact how the Homer dredge fished in relevance to the Kodiak dredge.
+
+How this will impact the data: the FPC estimate will be the same but the CI will be larger. HOW TO CALCULATE THE CI WHEN THERES MORE GOING ON IN THE MODEL?? (add it or something?). With a large CI, the FPC will not be applied (the CI will overlap with 1.)  So we wont have an FPC to convert the older homer space data to kodiak space data.
+
+I have info on which hauls were conducted after the repair.
+I will do three things:
+
+    0. Add the FIXED/ NOT FIXED factor to the data. This will indicate if it is before the homer fix or after the homer fi
+    1. Do the randomized block ANOVA separately, for before and after the fix.
+    2. Add FIX as a random or fixed effect
+        2.1 test to see if a fixed effect or random effect would be more apprpriate
+
+## Analysis
+
+Load packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(RColorBrewer)
+library(cowplot)
+library(fishmethods)
+library(viridis)
+library(patchwork)
+
+set.seed(401)
+```
+
+
+
+Read in data. 
+```{r}
+## logbook data
+logbook <- read.csv("./data_folder/new_data_dump/DredgeSurvey_FishLogData_CatchComparisonHauls.csv") 
+
+## catch data
+catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchComparisonHauls.csv") 
+
+## specimen data
+specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+```
+
+Data wrangle.
+```{r}
+# join logbook and catch in a way that preserves zero catches
+tidyr::expand_grid(logbook,
+            dplyr::distinct(dplyr::transmute(catch_raw, samp_grp, rcode, comname, whole_haul, sample_type))) %>% #expand logbook to all catch types
+  dplyr::left_join(catch_raw) %>% #join with the catch.This connects catch vales to gear_code id.
+  # fill in zero catches
+  tidyr::replace_na(list(samp_cnt = 0, samp_wt = 0)) %>%
+  # filter for scallops
+  dplyr::filter(rcode == 74120) -> catch # now you have records of scallop catch per size class (samp_grp) per gear type
+  
+
+# cpue will be samp_wt (or count) / area_swept_sqnm. This code is calculating CPUE for both weight and number of scallops
+catch_cpue <- catch %>% 
+    dplyr::mutate(cpue_cnt = samp_cnt/area_swept_sqnm,
+           cpue_wt = samp_wt/area_swept_sqnm)
+
+# compute sample factor for specimen data 
+specimen %>%
+  # group by tow, samp grp, and size to get n at size
+  dplyr::group_by(tow, samp_grp, shell_height) %>%
+  dplyr::summarize(count = n()) %>%
+  # compute number measured per tow
+  dplyr::group_by(tow, samp_grp) %>%
+  dplyr::mutate(n_measured = n()) %>% dplyr::ungroup() %>%
+  # join to catch data
+  dplyr::left_join(catch, by = c("tow", "samp_grp")) %>%
+  # compute sample factor
+  dplyr::mutate(sample_factor = samp_cnt * (count / n_measured)) -> specimen
+
+#separate large and small scallops for cpue
+large <- catch_cpue %>% dplyr::filter(samp_grp == 1)
+small <- catch_cpue %>% dplyr::filter(samp_grp == 2)
+
+##Remove where both hauls are 0.
+large_2 <- large %>% #no change
+    dplyr::group_by(haul) %>%
+    dplyr::filter(!all(cpue_cnt == 0)) %>%
+    dplyr::ungroup()
+
+small_2 <- small %>% #filtered out where both dredges in a haul caught nothing
+    dplyr::group_by(haul) %>%
+    dplyr::filter(!all(cpue_cnt == 0)) %>%
+    dplyr::ungroup()
+
+#code the factors as factors
+large_m <- large_2 %>%
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5","1")), haul = base::factor(haul))  #the levels argument specifies that Kodiak(5) is the base, to compare Homer(1) against
+    
+
+small_m <- small_2 %>%
+           dplyr::mutate(gear_code = base::factor(gear_code, levels=c("5", "1")), haul = base::factor(haul)) #levels=c(1,5) ?
+
+```
+
+
+Add the pre or post fix column
+
+```{r}
+Homer_fix_table <- data.frame(haul=c(141, 150, 152, 154, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197), Homer_fix=(base::rep("post", 15)))
+
+Homer_fix_table$haul <- factor(Homer_fix_table$haul)
+
+Haul_post <- factor(c(141, 150, 152, 154, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197))
+
+Haul_pre <- unique(large_m$haul)
+Haul_pre <- Haul_pre[-c(34:48)]
+
+Homer_pre_fix <- data.frame(haul=Haul_pre, Homer_fix=(base::rep("pre", length(Haul_pre))))
+
+#make the table
+Homer_fix <- rbind(Homer_pre_fix, Homer_fix_table)
+
+#join into other tavles
+str(left_join(large_m, Homer_fix, by= "haul" ))
+str(large_m)
+
+large_m <- left_join(large_m, Homer_fix, by= "haul" )
+small_m <- left_join(large_m, Homer_fix, by= "haul" )
+
+#add the homer fix to the size tables too?
+specimen$haul <- factor(specimen$haul)
+specimen <- left_join(specimen, Homer_fix, by="haul")
+
+```
+
+
