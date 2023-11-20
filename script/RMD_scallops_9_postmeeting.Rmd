@@ -22,7 +22,7 @@ I will do three things:
         
 ## Take aways after analysis:
 
-Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> kodiak numerical space) and a different way after the fix (smaller than one for homer -> kodiak numberical space), for both large and small scallops. Results here:
+Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> kodiak numerical space) and a different way after the fix (smaller than one for homer -> kodiak numberical space), for both large and small scallops. Results here: significant FPC only for large(pre-fix), insignificant for large(post-fix) and small(both pre and post-fix).
 
 And (2) that when I experiment with a pre/post fix factor as either a random or fixed effect in the model, things are...weird. It seems like the haul (blocking variable) completely masks all variability/contribution that would otherwise go to the pre/post fix factor. The fix is not statistically significant when haul is also in the model. Which I think is misleading, because from the results of the compelte pre/post model separation, we know that the FPC is pushed in different directions before and after the fix event.
 
@@ -162,6 +162,9 @@ ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(g
     ggtitle("Small scallops")+
     labs(shape="Gear type", color= "Bed name")+
     facet_wrap(~Homer_fix, nrow=2)
+
+
+ggsave("Split anova L.png", plot=large_m, height=10, width=20, units="in")
 ```
 
 
