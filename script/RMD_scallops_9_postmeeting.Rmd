@@ -17,7 +17,12 @@ I will do three things:
     0. Add the FIXED/ NOT FIXED factor to the data. This will indicate if it is before the homer fix or after the homer fi
     1. Do the randomized block ANOVA separately, for before and after the fix.
     2. Add FIX as a random or fixed effect
-        2.1 test to see if a fixed effect or random effect would be more apprpriate
+        2.1 test to see if a fixed effect or random effect would be more apprpriate4
+        
+        
+## Take aways after analysis:
+
+Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> kodiak numerical space) and a different way after the fix (smaller than one for homer -> kodiak numberical space), for both large and small scallops.
 
 ## Analysis
 
@@ -31,6 +36,7 @@ library(cowplot)
 library(fishmethods)
 library(viridis)
 library(patchwork)
+library(lme4)
 
 set.seed(401)
 ```
@@ -120,14 +126,15 @@ Haul_pre <- Haul_pre[-c(34:48)]
 Homer_pre_fix <- data.frame(haul=Haul_pre, Homer_fix=(base::rep("pre", length(Haul_pre))))
 
 #make the table
-Homer_fix <- rbind(Homer_pre_fix, Homer_fix_table)
+Homer_fix_T <- rbind(Homer_pre_fix, Homer_fix_table)
+Homer_fix_T$Homer_fix <- factor(Homer_fix_T$Homer_fix)
 
 #join into other tavles
-str(left_join(large_m, Homer_fix, by= "haul" ))
-str(large_m)
+#str(left_join(large_m, Homer_fix, by= "haul" ))
+#str(large_m)
 
 large_m <- left_join(large_m, Homer_fix, by= "haul" )
-small_m <- left_join(large_m, Homer_fix, by= "haul" )
+small_m <- left_join(small_m, Homer_fix, by= "haul" )
 
 #add the homer fix to the size tables too?
 specimen$haul <- factor(specimen$haul)
@@ -135,4 +142,184 @@ specimen <- left_join(specimen, Homer_fix, by="haul")
 
 ```
 
+
+Plot pre and post dredge fix - WIP, need to add the fix
+```{r}
+ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    theme_cowplot()+
+    xlab("Haul")+ ylab("CPUE (weight)")+
+    ggtitle("Large scallops")+
+    labs(shape="Gear type", color= "Bed name")+
+    facet_wrap(~Homer_fix, nrow=2)
+
+
+
+ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    theme_cowplot()+
+    xlab("Haul")+ ylab("CPUE (weight)")+
+    ggtitle("Large scallops")+
+    labs(shape="Gear type", color= "Bed name")+
+    facet_wrap(~Homer_fix, nrow=2)
+```
+
+
+
+Split into pre and post- repair FPC tests
+```{r}
+options(contrasts = rep("contr.sum", 2))
+
+#large scallops
+l_pre <- large_m %>% filter(Homer_fix == "pre")
+l_post <- large_m %>% filter(Homer_fix == "post")
+
+
+mod_L_pre_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=l_pre)
+mod_L_post_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=l_post)
+
+sum_L_pre <- summary(mod_L_pre_cnt)
+sum_L_post <- summary(mod_L_post_cnt)
+
+#small scallops
+
+s_pre <- small_m %>% filter(Homer_fix == "pre")
+s_post <- small_m %>% filter(Homer_fix == "post")
+
+
+mod_S_pre_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=s_pre)
+mod_S_post_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=s_post)
+
+sum_S_pre <- summary(mod_S_pre_cnt)
+sum_S_post <- summary(mod_S_post_cnt)
+
+##################################
+#get FPC estimator
+###########################
+
+
+#large pre repair
+s_L_pre <- sum_L_pre$coefficients[2,2]  
+g_L_pre <- sum_L_pre$coefficients[2,1]
+
+FPC_large_pre <- exp(2*g_L_pre*(1+(0.5*(s_L_pre^2)))) #1.87
+
+#large post repair
+s_L_post <- sum_L_post$coefficients[2,2]  
+g_L_post <- sum_L_post$coefficients[2,1]
+
+FPC_large_post <- exp(2*g_L_post*(1+(0.5*(s_L_post^2)))) #0.88 #oof, pre and post repair are very different FPC's.
+
+#small pre repair
+s_S_pre <- sum_S_pre$coefficients[2,2]  
+g_S_pre <- sum_S_pre$coefficients[2,1]
+
+FPC_small_pre <- exp(2*g_S_pre*(1+(0.5*(s_S_pre^2)))) #1.64
+
+#small post repair
+s_S_post <- sum_S_post$coefficients[2,2]  
+g_S_post <- sum_S_post$coefficients[2,1]
+
+FPC_small_post <- exp(2*g_S_post*(1+(0.5*(s_S_post^2))))#0.87
+
+
+
+
+##########################
+#get confidence intervals
+#####################
+upper_CI_L_pre <- exp(2*g_L_pre + 1.96*2*s_L_pre)
+lower_CI_L_pre <- exp(2*g_L_pre - 1.96*2*s_L_pre)
+
+upper_CI_L_post <- exp(2*g_L_post + 1.96*2*s_L_post)
+lower_CI_L_post <- exp(2*g_L_post - 1.96*2*s_L_post)
+
+upper_CI_S_pre <- exp(2*g_S_pre + 1.96*2*s_S_pre)
+lower_CI_S_pre <- exp(2*g_S_pre - 1.96*2*s_S_pre)
+
+upper_CI_S_post <- exp(2*g_S_post + 1.96*2*s_S_post)
+lower_CI_S_post <- exp(2*g_S_post - 1.96*2*s_S_post)
+
+
+upper_CI <- c(upper_CI_L_pre, upper_CI_L_post, upper_CI_S_pre, upper_CI_S_post)
+lower_CI <- c(lower_CI_L_pre, lower_CI_L_post, lower_CI_S_pre,lower_CI_S_post)
+
+###############
+#make the table
+##############
+
+FPC <- c(FPC_large_pre, FPC_large_post, FPC_small_pre, FPC_small_post)
+Category <- c("large(pre)" , "large(post)", "small(pre)", "small(post)")
+
+scallop_FPC_table <- data.frame(Category, FPC)
+
+
+scallop_FPC_table$Upper_CI <- upper_CI
+scallop_FPC_table$Lower_CI <- lower_CI
+
+scallop_FPC_table
+
+#oof. pre conclusions are different from post conclusions for large. No FPC applied for small, but still, oof.
+
+```
+
+
+
+
+
+
+Random effect or fixed effect (test for it) -  Homer dredge fix
+```{r}
+#Q:
+##do  I need to apply the options argument here, to switch it back to default??
+##Also, do I calculate the FPC when there's other stuff going on... add this stuff to the uncertainty??
+#############################################################################################################
+
+large_m$Homer_fix <- factor(large_m$Homer_fix)
+small_m$Homer_fix <- factor(small_m$Homer_fix)
+
+#first establish the global model
+##large
+global_L <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
+
+##small
+global_S <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
+
+#test random effects
+random_L <- lmer(log(cpue_cnt+1) ~ gear_code + haul + (1|Homer_fix), data=large_m, REML=T) #this is probs the way to go
+##I get a warning about the hessian matrix and singularity, indicating that I do not have enough data for a mixed effects model
+summary(random_L)
+summary(global_L)
+ranef(random_L) #weird numbers
+
+random_S <- lmer(log(cpue_cnt+1) ~ gear_code + haul + (1|Homer_fix), data=small_m, REML=T) 
+#ok but this one runs without a hessian error.
+summary(random_S)
+ranef(random_S) #weird, saying the additional error from the Homer_fix is really really small, and I'm not so sure that is correct.
+#maybe haul absorbs a lot of this error?
+
+#try other model variations
+
+
+#fixed effect model
+fixed_L <- lm(log(cpue_cnt+1) ~ gear_code + haul + factor(Homer_fix), data=large_m)
+AIC(global_L, random_L) #says mixed model is better of these two
+AIC(global_L, fixed_L) #says thet're... the same
+##haul is absorbing all of the change, masking homer_fix.
+###hmm what to do about this
+summary(fixed_L)
+
+fixed_S <- lm(log(cpue_cnt+1) ~ gear_code + haul + factor(Homer_fix), data=small_m)
+AIC(global_S, random_S) #nothing wins
+AIC(global_S, fixed_S) #neitehr wins
+
+
+#what if I take away haul
+mod_L_no_haul <- lm(log(cpue_cnt+1) ~ gear_code + factor(Homer_fix), data=large_m)
+mod_S_no_haul <- lm(log(cpue_cnt+1) ~ gear_code + factor(Homer_fix), data=small_m)
+
+summary(mod_L_no_haul)
+summary(mod_S_no_haul)
+
+#gear code is not sig, when haul is removed. Duh, should have expected taht
+
+```
 
