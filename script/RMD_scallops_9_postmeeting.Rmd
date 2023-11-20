@@ -22,7 +22,9 @@ I will do three things:
         
 ## Take aways after analysis:
 
-Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> kodiak numerical space) and a different way after the fix (smaller than one for homer -> kodiak numberical space), for both large and small scallops.
+Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> kodiak numerical space) and a different way after the fix (smaller than one for homer -> kodiak numberical space), for both large and small scallops. Results here:
+
+And (2) that when I experiment with a pre/post fix factor as either a random or fixed effect in the model, things are...weird. It seems like the haul (blocking variable) completely masks all variability/contribution that would otherwise go to the pre/post fix factor. The fix is not statistically significant when haul is also in the model. Which I think is misleading, because from the results of the compelte pre/post model separation, we know that the FPC is pushed in different directions before and after the fix event.
 
 ## Analysis
 
@@ -157,7 +159,7 @@ ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(g
 ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
     xlab("Haul")+ ylab("CPUE (weight)")+
-    ggtitle("Large scallops")+
+    ggtitle("Small scallops")+
     labs(shape="Gear type", color= "Bed name")+
     facet_wrap(~Homer_fix, nrow=2)
 ```
@@ -258,6 +260,9 @@ scallop_FPC_table$Lower_CI <- lower_CI
 scallop_FPC_table
 
 #oof. pre conclusions are different from post conclusions for large. No FPC applied for small, but still, oof.
+
+
+#graph pre and post in order? nah.
 
 ```
 
