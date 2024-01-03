@@ -161,24 +161,32 @@ specimen <- left_join(specimen, Homer_fix_T, by="haul")
 
 Graph of stuff, without the pre/post fix, to see where the change over happens
 ```{r}
+library(scales)
 
 xx <- ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
     xlab("Haul")+ ylab("CPUE")+ #cpue count
     ggtitle("Large scallops")+
-    labs(shape="Gear type", color= "Bed name")#+
+    labs(shape="Gear type", color= "Bed name")+
+    scale_y_continuous(labels= label_comma())#+
     #facet_wrap(~Homer_fix, nrow=2)
 
 yy <- ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
     xlab("Haul")+ ylab("CPUE")+ #cpue count
     ggtitle("Small scallops")+
-    labs(shape="Gear type", color= "Bed name")#+
+    labs(shape="Gear type", color= "Bed name")+
+    scale_y_continuous(labels= label_comma())#+
     #facet_wrap(~Homer_fix, nrow=2)
 
 yyy <- yy + theme(legend.position ="none")
 
-xx/yyy + plot_layout(guides="collect")
+cplot <- xx/yyy + plot_layout(guides="collect")
+cplot
+
+#plot to show the full thing where we noticed the maintenence that happened
+
+ggsave("figures/exploratory.tiff", plot=cplot, height=10, width=20, units="in")
 
 ```
 
@@ -190,7 +198,8 @@ x <-ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=fact
     xlab("Haul")+ ylab("CPUE")+
     ggtitle("Large scallops")+
     labs(shape="Gear type", color= "Bed name")+
-    facet_wrap(~Homer_fix, nrow=2)
+    facet_wrap(~Homer_fix, nrow=2)+
+    scale_y_continuous(labels= label_comma())
 
 
 
@@ -199,12 +208,15 @@ y<- ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=fact
     xlab("Haul")+ ylab("CPUE")+
     ggtitle("Small scallops")+
     labs(shape="Gear type", color= "Bed name")+
-    facet_wrap(~Homer_fix, nrow=2)
+    facet_wrap(~Homer_fix, nrow=2)+
+    scale_y_continuous(labels= label_comma())
 x
 y
 
-#ggsave("Split anova L.pdf", plot=x, height=10, width=20, units="in")
-#ggsave("Split anova S.pdf", plot=y, height=10, width=20, units="in")
+x/y +plot_layout(guides="collect")
+
+ggsave("figures/Split anova L.jpg", plot=x, height=10, width=20, units="in")
+ggsave("figures/Split anova S.jpg", plot=y, height=10, width=20, units="in")
 ```
 
 
@@ -302,15 +314,25 @@ scallop_FPC_table$Lower_CI <- lower_CI
 
 scallop_FPC_table
 
+write.csv(scallop_FPC_table, "results/Scallop FPC Table.csv")
+
 #oof. pre conclusions are different from post conclusions for large. No FPC applied for small, but still, oof.
 
+#get the combined FPC as well. for scallop count.
+#yes
+##large scallops combined FPC
+##small scallops combined FPC
 
-#graph pre and post in order? nah.
 
 ```
 
 
+FPC graph
+```{r}
+#graph the FPC's and their confidence intervals, shwoing how they comapre to each other and also to 1.
 
+
+```
 
 
 
