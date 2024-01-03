@@ -22,9 +22,9 @@ I will do three things:
         
 ## Take aways after analysis:
 
-Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> kodiak numerical space) and a different way after the fix (smaller than one for homer -> kodiak numberical space), for both large and small scallops. Results here: significant FPC only for large(pre-fix), insignificant for large(post-fix) and small(both pre and post-fix).
+Biggest things were that (1) when I separate the data before and after the homer fix, the FPC results are drastically different. Suggesting one way before the fix (larger than one for homer-> Kodiak numerical space) and a different way after the fix (smaller than one for homer -> Kodiak numerical space), for both large and small scallops. Results here: significant FPC only for large(pre-fix), insignificant for large(post-fix) and small(both pre and post-fix).
 
-And (2) that when I experiment with a pre/post fix factor as either a random or fixed effect in the model, things are...weird. It seems like the haul (blocking variable) completely masks all variability/contribution that would otherwise go to the pre/post fix factor. The fix is not statistically significant when haul is also in the model. Which I think is misleading, because from the results of the compelte pre/post model separation, we know that the FPC is pushed in different directions before and after the fix event.
+And (2) that when I experiment with a pre/post fix factor as either a random or fixed effect in the model, things are...weird. It seems like the haul (blocking variable) completely masks all variability/contribution that would otherwise go to the pre/post fix factor. The fix is not statistically significant when haul is also in the model. Which I think is misleading, because from the results of the complete pre/post model separation, we know that the FPC is pushed in different directions before and after the fix event.
 
 ## Analysis
 
@@ -55,7 +55,21 @@ catch_raw <- read.csv("./data_folder/new_data_dump/DredgeSurvey_CatchData_CatchC
 
 ## specimen data
 specimen <- read.csv("./data_folder/new_data_dump/DredgeSurvey_ScallopBioData_CatchComparisonHauls.csv")
+
 ```
+
+Get some stats
+```{r}
+#how many hauls?
+length(unique(logbook$haul)) #48 paired hauls hauls, 
+
+a <- logbook %>% filter(cruise_year==2023)
+length(unique(a$haul)) #38 paired hauls in 2023
+
+b<- logbook %>% filter(cruise_year==2022)
+length(unique(b$haul)) #10 paired hauls in 2022
+```
+
 
 Data wrangle.
 ```{r}
@@ -135,12 +149,36 @@ Homer_fix_T$Homer_fix <- factor(Homer_fix_T$Homer_fix)
 #str(left_join(large_m, Homer_fix, by= "haul" ))
 #str(large_m)
 
-large_m <- left_join(large_m, Homer_fix, by= "haul" )
-small_m <- left_join(small_m, Homer_fix, by= "haul" )
+large_m <- left_join(large_m, Homer_fix_T, by= "haul" ) #something is up here. The join isnt working. Homer_fix_T instead?
+small_m <- left_join(small_m, Homer_fix_T, by= "haul" )
 
 #add the homer fix to the size tables too?
 specimen$haul <- factor(specimen$haul)
-specimen <- left_join(specimen, Homer_fix, by="haul")
+specimen <- left_join(specimen, Homer_fix_T, by="haul")
+
+```
+
+
+Graph of stuff, without the pre/post fix, to see where the change over happens
+```{r}
+
+xx <- ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    theme_cowplot()+
+    xlab("Haul")+ ylab("CPUE")+ #cpue count
+    ggtitle("Large scallops")+
+    labs(shape="Gear type", color= "Bed name")#+
+    #facet_wrap(~Homer_fix, nrow=2)
+
+yy <- ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
+    theme_cowplot()+
+    xlab("Haul")+ ylab("CPUE")+ #cpue count
+    ggtitle("Small scallops")+
+    labs(shape="Gear type", color= "Bed name")#+
+    #facet_wrap(~Homer_fix, nrow=2)
+
+yyy <- yy + theme(legend.position ="none")
+
+xx/yyy + plot_layout(guides="collect")
 
 ```
 
@@ -149,7 +187,7 @@ Plot pre and post dredge fix - WIP, need to add the fix
 ```{r}
 x <-ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
-    xlab("Haul")+ ylab("CPUE (weight)")+
+    xlab("Haul")+ ylab("CPUE")+
     ggtitle("Large scallops")+
     labs(shape="Gear type", color= "Bed name")+
     facet_wrap(~Homer_fix, nrow=2)
@@ -158,15 +196,15 @@ x <-ggplot(large_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=fact
 
 y<- ggplot(small_m) + aes(x=factor(haul), y=cpue_cnt, color=bed_name, shape=factor(gear_code)) + geom_point(size=4) +scale_color_brewer(type="qual", palette=3)+ scale_shape_manual(values=c(19, 15),labels=c("Kodiak dredge", "Homer dredge"))+
     theme_cowplot()+
-    xlab("Haul")+ ylab("CPUE (weight)")+
+    xlab("Haul")+ ylab("CPUE")+
     ggtitle("Small scallops")+
     labs(shape="Gear type", color= "Bed name")+
     facet_wrap(~Homer_fix, nrow=2)
 x
 y
 
-ggsave("Split anova L.png", plot=x, height=10, width=20, units="in")
-ggsave("Split anova S.png", plot=y, height=10, width=20, units="in")
+#ggsave("Split anova L.pdf", plot=x, height=10, width=20, units="in")
+#ggsave("Split anova S.pdf", plot=y, height=10, width=20, units="in")
 ```
 
 
