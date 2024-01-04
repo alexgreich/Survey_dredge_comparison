@@ -347,7 +347,7 @@ lower_CI <- c(lower_CI_L_pre, lower_CI_L_post, lower_CI_L, lower_CI_S_pre,lower_
 ##############
 
 FPC <- c(FPC_large_pre, FPC_large_post, FPC_large_cnt, FPC_small_pre, FPC_small_post, FPC_small_cnt)
-Category <- c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)")
+Category <- factor(x=c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)"), levels=c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)"))
 
 scallop_FPC_table <- data.frame(Category, FPC)
 
@@ -355,9 +355,9 @@ scallop_FPC_table <- data.frame(Category, FPC)
 scallop_FPC_table$Upper_CI <- upper_CI
 scallop_FPC_table$Lower_CI <- lower_CI
 
-scallop_FPC_table$repair <- factor(x=c("pre", "post", "combined", "pre", "post", "combined"))
+scallop_FPC_table$repair <- factor(x=c("pre", "post", "combined", "pre", "post", "combined"), levels=c("combined","pre", "post"))
 
-scallop_FPC_table
+scallop_FPC_table#$repair <- reorder(scallop_FPC_table$repair, X=c("combined", "pre", "post"))
 
 
 
@@ -378,7 +378,9 @@ ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +
     geom_point(size=4, aes(color=repair))+
     geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
     theme_cowplot()+
-    scale_color_brewer(palette = "Set1")
+    scale_color_brewer(palette = "Set1")+
+    labs(color= "Homer dredge repair status")
+    
 #add cofidence intervals/error bars too. Geom_errorbar?
 #and add a line at y=1 please
 #manusal color scale
@@ -387,14 +389,31 @@ ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +
 
 ```
 
-Mean and SD for both kodiak and homer scallops??
+Mean and SD for both kodiak and homer scallops hauls, sep by L and S sscallops.
+- supplmental slide
 ```{r}
+
+```
+
+
+Density graph exploration
+```{r}
+#any necessary data wrangling
+
+#overall density comparison: homer v kodiak (see scallops_8)
+
+#pre and post homer dredge fix: how did fixing homer dredge change density
+
+#other comparisons?
+
 
 ```
 
 
 
 Random effect or fixed effect (test for it) -  Homer dredge fix
+Random effect did not work
+Fixed effect was masked by the randomized block design
 ```{r}
 #Q:
 ##do  I need to apply the options argument here, to switch it back to default??
