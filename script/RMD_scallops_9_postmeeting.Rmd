@@ -373,7 +373,7 @@ FPC graph
 ```{r}
 library(RColorBrewer)
 #graph the FPC's and their confidence intervals, shwoing how they comapre to each other and also to 1.
-ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) + 
+FPC_graph <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) + 
     geom_errorbar(aes(ymin=Lower_CI, ymax=Upper_CI)) +
     geom_point(size=4, aes(color=repair))+
     geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
@@ -387,11 +387,38 @@ ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +
 #get rid of "repair" or name it somethign better
 #switch the pre and post factor order, so it goes pre then post
 
+ggsave("figures/FPC_graph.jpg",plot=FPC_graph, height=5, width=10, units="in")
+
 ```
 
-Mean and SD for both kodiak and homer scallops hauls, sep by L and S sscallops.
-- supplmental slide
+
+Kappenman's analysis (see scallops_8)
 ```{r}
+#large scallops, combined
+
+#large scallops pre
+
+#large scallops post
+
+
+
+#small scallops, combined
+
+#small scallops pre
+
+#small scallops post
+
+```
+
+
+Graph Kappenman's
+
+Mean and SD for both kodiak and homer scallops hauls, sep by L and S scallops.
+- supplmental slide
+- MSE for just the randomzied block ANOVA, for now
+```{r}
+#
+
 
 ```
 
@@ -410,6 +437,8 @@ Density graph exploration
 ```
 
 
+
+Experiment below:
 
 Random effect or fixed effect (test for it) -  Homer dredge fix
 Random effect did not work
