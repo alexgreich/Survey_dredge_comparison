@@ -222,6 +222,7 @@ ggsave("figures/Split anova S.jpg", plot=y, height=10, width=20, units="in")
 
 
 Split into pre and post- repair FPC tests
+make sure the FPC is homer space -> kodiak space
 ```{r}
 options(contrasts = rep("contr.sum", 2))
 
@@ -296,15 +297,57 @@ upper_CI_S_post <- exp(2*g_S_post + 1.96*2*s_S_post)
 lower_CI_S_post <- exp(2*g_S_post - 1.96*2*s_S_post)
 
 
-upper_CI <- c(upper_CI_L_pre, upper_CI_L_post, upper_CI_S_pre, upper_CI_S_post)
-lower_CI <- c(lower_CI_L_pre, lower_CI_L_post, lower_CI_S_pre,lower_CI_S_post)
+
+
+
+
+
+
+#get the combined FPC as well. for scallop count.
+#yes
+##large scallops combined FPC
+
+mod_L_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=large_m)
+
+sum_L_cnt <- summary(mod_L_cnt)
+
+
+##small scallops combined FPC
+mod_S_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=small_m)
+
+sum_S_cnt <- summary(mod_S_cnt)
+
+##FPC's
+#large
+s_L <- sum_L_cnt$coefficients[2,2]  
+g_L <- sum_L_cnt$coefficients[2,1]
+
+FPC_large_cnt <- exp(2*g_L*(1+(0.5*(s_L^2)))) #1.472
+#small
+
+s_S <- sum_S_cnt$coefficients[2,2]  
+g_S <- sum_S_cnt$coefficients[2,1]
+
+FPC_small_cnt <- exp(2*g_S*(1+(0.5*(s_S^2)))) #1.321
+
+##get confidence intervals
+#large
+upper_CI_L <- exp(2*g_L + 1.96*2*s_L)
+lower_CI_L <- exp(2*g_L - 1.96*2*s_L)
+#small
+upper_CI_S <- exp(2*g_S + 1.96*2*s_S)
+lower_CI_S <- exp(2*g_S - 1.96*2*s_S)
+
+
+upper_CI <- c(upper_CI_L_pre, upper_CI_L_post, upper_CI_L, upper_CI_S_pre, upper_CI_S_post, upper_CI_S )
+lower_CI <- c(lower_CI_L_pre, lower_CI_L_post, lower_CI_L, lower_CI_S_pre,lower_CI_S_post, lower_CI_S)
 
 ###############
 #make the table
 ##############
 
-FPC <- c(FPC_large_pre, FPC_large_post, FPC_small_pre, FPC_small_post)
-Category <- c("large(pre)" , "large(post)", "small(pre)", "small(post)")
+FPC <- c(FPC_large_pre, FPC_large_post, FPC_large_cnt, FPC_small_pre, FPC_small_post, FPC_small_cnt)
+Category <- c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)")
 
 scallop_FPC_table <- data.frame(Category, FPC)
 
@@ -312,16 +355,15 @@ scallop_FPC_table <- data.frame(Category, FPC)
 scallop_FPC_table$Upper_CI <- upper_CI
 scallop_FPC_table$Lower_CI <- lower_CI
 
+scallop_FPC_table$repair <- factor(x=c("pre", "post", "combined", "pre", "post", "combined"))
+
 scallop_FPC_table
+
+
 
 write.csv(scallop_FPC_table, "results/Scallop FPC Table.csv")
 
 #oof. pre conclusions are different from post conclusions for large. No FPC applied for small, but still, oof.
-
-#get the combined FPC as well. for scallop count.
-#yes
-##large scallops combined FPC
-##small scallops combined FPC
 
 
 ```
@@ -329,8 +371,24 @@ write.csv(scallop_FPC_table, "results/Scallop FPC Table.csv")
 
 FPC graph
 ```{r}
+library(RColorBrewer)
 #graph the FPC's and their confidence intervals, shwoing how they comapre to each other and also to 1.
+ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) + 
+    geom_errorbar(aes(ymin=Lower_CI, ymax=Upper_CI)) +
+    geom_point(size=4, aes(color=repair))+
+    geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
+    theme_cowplot()+
+    scale_color_brewer(palette = "Set1")
+#add cofidence intervals/error bars too. Geom_errorbar?
+#and add a line at y=1 please
+#manusal color scale
+#get rid of "repair" or name it somethign better
+#switch the pre and post factor order, so it goes pre then post
 
+```
+
+Mean and SD for both kodiak and homer scallops??
+```{r}
 
 ```
 
