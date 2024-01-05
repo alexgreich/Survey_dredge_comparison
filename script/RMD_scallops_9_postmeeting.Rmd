@@ -510,12 +510,118 @@ Mean and SD for both kodiak and homer scallops hauls, sep by L and S scallops.
 
 ```
 
-How does a combined FPC graph look?
+Combined FPC graph, both for RB ANOVA and kapp
 ```{r}
 (FPC_combined_graph <- FPC_graph/kappgraph + plot_layout(guides="collect"))
 
 ggsave("figures/FPC_combined_graph.jpg", plot=FPC_combined_graph, height=5, width=10, units="in")
 ```
+
+
+MSE for RB ANOVA
+```{r}
+f_mse_sim_AR1 <- function(data, n, method){ ##Should this function use both homer and kodiak cpue data or just kodiak cpue data?? 
+  
+  # pull cpue from data
+  data %>%
+    pull(cpue_wt) -> cpue  #should this be all the cpue or just for the uncorrected? 
+    
+  # compute parameters of lognormal dist
+  mu = log(mean(cpue)) - 0.5*log(1+(sd(cpue)/mean(cpue))^2) #ok if this is global? OR should these values be just for Kodiak?? We use the total CPUE to calc the correction?? Should this function use both homer and kodiak cpue data or just kodiak cpue data?? 
+  
+  var = log(1+(sd(cpue)/mean(cpue))^2) 
+  
+  # check pdf
+  #hist(cpue, freq = F)
+  #lines(density(rlnorm(1000, meanlog = mu, sdlog = sqrt(var))), col = 2)
+  
+  cpue_u = NULL
+  cpue_c = NULL
+  mse_u = NULL
+  mse_c = NULL
+  fpd = seq(0.1, 2, 0.1) 
+  for(i in 1:length(fpd)){
+    for(j in 1:200){
+      # simulate cpue standard vessel aka the KODIAK dredge
+      kod_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) #simulations for KODIAK(updated) #SHOULD THIS INDICATE ACTUAL mu values for kodiak??
+      # simulate cpue non-standard vessel aka the Kodiak dredge
+      hom_sim = rlnorm(n, meanlog = mu, sdlog = sqrt(var)) * fpd[i] #simulations for HOMER(updated)
+      # estimate FPC
+      fpc <- fpc(cpue1 = kod_sim, cpue2 = hom_sim, method = method, nboot = 0, kapp_zeros = "ind") #ah. here we can choose if we want method 2 (anova) or 4(kappenmans). I altered here to make kodiak the default
+
+      # join vessel cpues to one vector
+      ## uncorrected
+      survey_u = c(kod_sim, hom_sim)
+      ## corrected
+      survey_c = c(kod_sim, (hom_sim * fpc$FPC))  # scale to standard vessel
+      
+      # compute means of uncorrected and corrected data
+      cpue_u[j] = mean(survey_u)
+      cpue_c[j] = mean(survey_c)
+      
+    }
+    mse_u[i] = mean((cpue_u - mean(cpue))^2)
+    mse_c[i] = mean((cpue_c - mean(cpue))^2)
+  }
+  
+  tibble(fpd = fpd,
+         mse_u = mse_u,
+         mse_c = mse_c)
+  
+}
+
+
+### simulation plot function AR
+f_sim_plot <- function(data, fpc){
+  # plot data
+  data %>%
+    pivot_longer(cols=c("mse_u", "mse_c"), names_to = "sim", values_to = "mse") %>%
+    mutate(sim = case_when(sim == "mse_u" ~ "Uncorrected",
+                           sim == "mse_c" ~ "Corrected")) %>%
+    ggplot()+
+    geom_point(aes(x = fpd, y = mse, color = sim), alpha = 0.3)+
+    geom_smooth(aes(x = fpd, y = mse, color = sim), method = "lm",formula = y ~ poly(x, 2), se = F)+
+   # scale_color_manual(values = cb_palette[c(1,3)])+
+    geom_vline(aes(xintercept = fpc), linetype = 2)+ #add in later? PROBS. AR
+    labs(x = "Fishing Power Difference", y = "MSE", color = NULL)+
+    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2)) -> x
+  # save
+ # ggsave(paste0(path_prefix, spp_name, ".png"), plot = x, width = 5, height = 4, units = "in")
+  return(x)
+}
+
+### now taht functions are set up, get the results and graphs for my 6 categories
+scallop_FPC_table
+scallop_FPC_table[3,2]
+
+length(large_m$haul)/2
+RB_ANOVA_mse_large <- f_mse_sim_AR1(data=large_m, n=48, method=2) #n is the # of paired hauls
+plot_RB_ANOVA_mse_large<- f_sim_plot(data=RB_ANOVA_mse_large, fpc=scallop_FPC_table[3,2])
+
+length(small_m$haul)/2 #double check #'s. Why so many removed from small?? Both were 0 for small scallops, that many? #ok there werw a lot of 0's...
+RB_ANOVA_mse_small <- f_mse_sim_AR1(data=small_m, n=44, method=2) #n was diff for large and small scallops
+plot_RB_ANOVA_mse_small <- f_sim_plot(data=RB_ANOVA_mse_small, fpc=scallop_FPC_table[6,2]) #was FPC
+
+length(l_pre$haul)/2 
+RB_ANOVA_mse_large_pre <- f_mse_sim_AR1(data=l_pre, n=33, method=2) #n is different. What is n?
+plot_RB_ANOVA_mse_large_pre<- f_sim_plot(data=RB_ANOVA_mse_large_pre, fpc=scallop_FPC_table[1,2])
+
+length(l_post$haul)/2
+RB_ANOVA_mse_large_post <- f_mse_sim_AR1(data=l_post, n=15, method=2) 
+plot_RB_ANOVA_mse_large_post<- f_sim_plot(data=RB_ANOVA_mse_large_post, fpc=scallop_FPC_table[2,2])
+
+
+length(s_pre$haul)/2
+RB_ANOVA_mse_small_pre <- f_mse_sim_AR1(data=s_pre, n=29, method=2) #n is different. What is n?
+plot_RB_ANOVA_mse_large_pre<- f_sim_plot(data=RB_ANOVA_mse_large_pre, fpc=scallop_FPC_table[4,2])
+
+length(s_post$haul)/2
+RB_ANOVA_mse_small_post <- f_mse_sim_AR1(data=s_post, n=15, method=2) 
+plot_RB_ANOVA_mse_large_post<- f_sim_plot(data=RB_ANOVA_mse_large_post, fpc=scallop_FPC_table[5,2])
+
+
+```
+
 
 
 Density graph exploration
@@ -530,6 +636,9 @@ Density graph exploration
 
 
 ```
+
+
+
 
 
 
