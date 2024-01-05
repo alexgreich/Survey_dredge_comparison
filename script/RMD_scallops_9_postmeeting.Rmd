@@ -613,12 +613,20 @@ plot_RB_ANOVA_mse_large_post<- f_sim_plot(data=RB_ANOVA_mse_large_post, fpc=scal
 
 length(s_pre$haul)/2
 RB_ANOVA_mse_small_pre <- f_mse_sim_AR1(data=s_pre, n=29, method=2) #n is different. What is n?
-plot_RB_ANOVA_mse_large_pre<- f_sim_plot(data=RB_ANOVA_mse_large_pre, fpc=scallop_FPC_table[4,2])
+plot_RB_ANOVA_mse_small_pre<- f_sim_plot(data=RB_ANOVA_mse_small_pre, fpc=scallop_FPC_table[4,2])
 
 length(s_post$haul)/2
 RB_ANOVA_mse_small_post <- f_mse_sim_AR1(data=s_post, n=15, method=2) 
-plot_RB_ANOVA_mse_large_post<- f_sim_plot(data=RB_ANOVA_mse_large_post, fpc=scallop_FPC_table[5,2])
+plot_RB_ANOVA_mse_small_post<- f_sim_plot(data=RB_ANOVA_mse_small_post, fpc=scallop_FPC_table[5,2])
 
+
+plot_RB_ANOVA_mse_large
+plot_RB_ANOVA_mse_small
+plot_RB_ANOVA_mse_large_pre
+plot_RB_ANOVA_mse_large_post
+plot_RB_ANOVA_mse_small_pre
+plot_RB_ANOVA_mse_small_post
+#and then SAVE ENVIRONMENT!!
 
 ```
 
@@ -639,6 +647,11 @@ Density graph exploration
 
 
 
+OVerall summary stats
+Mean, sd, etc
+```{r}
+
+```
 
 
 
