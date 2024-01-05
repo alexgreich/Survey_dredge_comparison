@@ -393,7 +393,8 @@ FPC_graph <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +
     geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
     theme_cowplot()+
     scale_color_brewer(palette = "Set1")+
-    labs(color= "Homer dredge repair status")
+    labs(color= "Homer dredge repair status")+
+    scale_y_continuous( limits=c(0.6,3.5), expand=c(0,0))
     
 #add cofidence intervals/error bars too. Geom_errorbar?
 #and add a line at y=1 please
@@ -504,7 +505,8 @@ Mean and SD for both kodiak and homer scallops hauls, sep by L and S scallops.
     theme_cowplot()+
     scale_color_brewer(palette = "Set1")+
     labs(color= "Homer dredge repair status", y="FPC")+
-     theme(legend.position ="none"))
+     theme(legend.position ="none"))+
+    scale_y_continuous(breaks=c(1, 2,3, 4), limits=c(0.2,4), expand=c(0,0))
 
 ```
 
