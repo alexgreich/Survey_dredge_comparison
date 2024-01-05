@@ -33,6 +33,7 @@ Load packages
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(dplyr)
 library(RColorBrewer)
 library(cowplot)
 library(fishmethods)
@@ -366,6 +367,19 @@ write.csv(scallop_FPC_table, "results/Scallop FPC Table.csv")
 #oof. pre conclusions are different from post conclusions for large. No FPC applied for small, but still, oof.
 
 
+####
+#outliers??
+####
+plot(mod_L_pre_cnt) #2 outliers
+plot(mod_L_post_cnt) #0 outliers
+
+plot(mod_S_pre_cnt) # 4 outliers
+plot(mod_S_post_cnt) #0 outliers
+
+plot(mod_L_cnt) #2 outliers
+plot(mod_S_cnt) #4 outliers
+
+
 ```
 
 
@@ -394,19 +408,84 @@ ggsave("figures/FPC_graph.jpg",plot=FPC_graph, height=5, width=10, units="in")
 
 Kappenman's analysis (see scallops_8)
 ```{r}
-#large scallops, combined
+f_kapp_AR <- function(data) {
+    #deleted args from function: ves1, ves2, vessel_name = "vessel"
+  
+  # ensure vessel and cpue columns are properly named
+  #data %>%
+   # rename(vessel = as.name(vessel_name),
+    #       cpue = as.name(cpue_name)) -> data
+  
+  # pivot data to wide format (i.e., in pairs)
+ # data %>%
+    #pivot_wider(names_from = vessel, values_from = cpue_wt) -> data
+  # extract cpue vectors from data
+ # cpue1 = data %>% pull(as.name(ves1)) # standard vessel
+ # cpue2 = data %>% pull(as.name(ves2)) 
+  
+  #alex code
+  tmp1 = data %>% filter(gear_code==5)
+  cpue1 <- tmp1$cpue_cnt
+  
+  tmp2 = data %>% filter(gear_code==1)
+  cpue2 <- tmp2$cpue_cnt
+  
+  # call fishmethods::fpc
+  kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4, kapp_zeros = "ind", boot_type = "unpaired"), silent = T)
+  #kapp = try(fishmethods::fpc(cpue1, cpue2, method = 4), silent = T)
+  #AR adjusted so that cpue 2 is the first number and cpue 1 is the second number
+  #cpue 2 is for gear type 5 (new dredge)
+  #cpue 1 is for gear type 1(old dredge)
+  
+  # organize results
+  if(class(kapp) == "try-error"){
+    tibble(n = NA,
+           cpue1 = NA,
+           cpue2 = NA,
+           fpc = NA,
+           boot_se = NA,
+           boot_l95 = NA,
+           boot_u95 = NA) -> out
+  } else{
+    kapp %>%
+      as_tibble() %>%
+      rename(n = n1,
+             cpue1 = `mean cpue1`,
+             cpue2 = `mean cpue2`,
+             fpc = FPC,
+             boot_se = Boot_SE,
+             boot_l95 = `Boot_95%_LCI`,
+             boot_u95 = `Boot_95%_UCI`) %>%
+      dplyr::select(n, cpue1, cpue2, fpc, boot_se, boot_l95, boot_u95) -> out
+  }
+    
+  # fix names
+  #names(out)[2] = paste0(ves1, "_cpue")
+  #names(out)[3] = paste0(ves2, "_cpue")
+  
+  # output
+  return(out)
+  
+}
 
-#large scallops pre
+#ok ok, that should be a functional function. f_kapp_AR
 
-#large scallops post
+kapp_cnt_L <- f_kapp_AR(data=large_m)
+kapp_cnt_S <- f_kapp_AR(data=small_m)
 
+kapp_L_pre <- f_kapp_AR(data=l_pre)
+kapp_L_post <- f_kapp_AR(data=l_post)
 
+kapp_S_pre <- f_kapp_AR(data=s_pre)
+kapp_S_post <- f_kapp_AR(data=s_post)
 
-#small scallops, combined
+kapp_tibble <- rbind(kapp_cnt_L, kapp_cnt_S, kapp_L_pre, kapp_L_post, kapp_S_pre, kapp_S_post)
+kapp_tibble
 
-#small scallops pre
+kapp_tibble$Category <- factor(x=c("large(combined)", "small(combined)", "large(pre)" , "large(post)", "small(pre)", "small(post)"), levels=c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)"))
+kapp_tibble$repair <- factor(x=c("combined", "combined", "pre", "post", "pre", "post"), levels=c("combined", "pre", "post"))    
 
-#small scallops post
+kapp_tibble
 
 ```
 
@@ -418,8 +497,22 @@ Mean and SD for both kodiak and homer scallops hauls, sep by L and S scallops.
 - MSE for just the randomzied block ANOVA, for now
 ```{r}
 #
+(kappgraph <- ggplot(kapp_tibble) + aes(x=Category, y=fpc) + 
+    geom_errorbar(aes(ymin=boot_l95, ymax=boot_u95), color="darkgrey") +
+    geom_point(size=4, aes(color=repair), alpha=0.7)+
+    geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed", alpha=0.7)+
+    theme_cowplot()+
+    scale_color_brewer(palette = "Set1")+
+    labs(color= "Homer dredge repair status", y="FPC")+
+     theme(legend.position ="none"))
 
+```
 
+How does a combined FPC graph look?
+```{r}
+(FPC_combined_graph <- FPC_graph/kappgraph + plot_layout(guides="collect"))
+
+ggsave("figures/FPC_combined_graph.jpg", plot=FPC_combined_graph, height=5, width=10, units="in")
 ```
 
 
