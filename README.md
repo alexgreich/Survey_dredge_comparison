@@ -10,3 +10,7 @@ RMD_scallops_8_condensed is the current working draft.
 
 A note on fishmethods::fmp(method=2). Method=2 commands the function to perform a randomized block ANOVA test.
 It changes the r default for options(). Note that. Options will revert back to normal after closing and re-opening Rstudio
+
+
+Update 1/17/12
+current draft is RMD_scallops_9_postmeeting.Rmd
