@@ -395,6 +395,16 @@ FPC_graph <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +
     scale_color_brewer(palette = "Set1")+
     labs(color= "Homer dredge repair status")+
     scale_y_continuous( limits=c(0.6,3.5), expand=c(0,0))
+
+FPC_graph_document <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +  #cleaning up fig for the paper
+    geom_errorbar(aes(ymin=Lower_CI, ymax=Upper_CI)) +
+    geom_point(size=4, aes(color=repair))+
+    geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
+    theme_cowplot()+
+    scale_color_brewer(palette = "Set1")+
+    labs(color= "Homer dredge repair status", x=element_blank())+
+    scale_y_continuous( limits=c(0.6,3.5), expand=c(0,0), breaks=c(1,2,3)) +
+    ggtitle("Randomized block ANOVA")
     
 #add cofidence intervals/error bars too. Geom_errorbar?
 #and add a line at y=1 please
@@ -488,6 +498,8 @@ kapp_tibble$repair <- factor(x=c("combined", "combined", "pre", "post", "pre", "
 
 kapp_tibble
 
+write.csv(x=kapp_tibble, file= "results/Kapp tibble.csv")
+
 ```
 
 
@@ -508,13 +520,29 @@ Mean and SD for both kodiak and homer scallops hauls, sep by L and S scallops.
      theme(legend.position ="none"))+
     scale_y_continuous(breaks=c(1, 2,3, 4), limits=c(0.2,4), expand=c(0,0))
 
+kappgraph_document <- ggplot(kapp_tibble) + aes(x=Category, y=fpc) + 
+    geom_errorbar(aes(ymin=boot_l95, ymax=boot_u95)) +
+    geom_point(size=4, aes(color=repair))+
+    geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
+    theme_cowplot()+
+    scale_color_brewer(palette = "Set1")+
+    labs(color= "Homer dredge repair status", y="FPC")+
+     theme(legend.position ="none")+
+    scale_y_continuous(breaks=c(1, 2,3, 4), limits=c(0.2,4), expand=c(0,0)) +
+    ggtitle("Kappenman")
+
 ```
 
 Combined FPC graph, both for RB ANOVA and kapp
 ```{r}
+#version for the ppt
 (FPC_combined_graph <- FPC_graph/kappgraph + plot_layout(guides="collect"))
 
-#ggsave("figures/FPC_combined_graph.jpg", plot=FPC_combined_graph, height=5, width=10, units="in")
+#making the version for the document
+FPC_com_doc <- FPC_graph_document/kappgraph_document +  plot_layout(guides="collect")
+
+ggsave("figures/FPC_combined_graph.jpg", plot=FPC_combined_graph, height=5, width=10, units="in")
+ggsave("figures/FPC_combined_graph_doc.jpg", plot= FPC_com_doc, height=6, width=10, units="in")
 ```
 
 
