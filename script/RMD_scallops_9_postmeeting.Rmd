@@ -844,3 +844,182 @@ summary(mod_S_no_haul)
 
 ```
 
+
+experiemnt: remove outliers
+- we know in cases where one haul is 0 and the other caught somethign, that is an outlier situation.
+-we've already removed cases were both hauls were 0 in a paired haul
+- remove outleirs and see if resutls (CI's too) look teh same
+```{r}
+#outleir ID
+plot(mod_L_pre_cnt) #2 outliers
+plot(mod_L_post_cnt) #0 outliers
+
+plot(mod_S_pre_cnt) # 4 outliers
+plot(mod_S_post_cnt) #0 outliers
+
+plot(mod_L_cnt) #2 outliers
+plot(mod_S_cnt) #4 outliers
+
+#remove them
+
+no_outliers_l <- large_m[-c(21,22),]
+no_outliers_s <- small_m[-c(23,24,35,36),]
+```
+
+Results but without the outliers
+```{r}
+options(contrasts = rep("contr.sum", 2))
+
+#large scallops
+l_pre <- no_outliers_l %>% filter(Homer_fix == "pre")
+l_post <- no_outliers_l %>% filter(Homer_fix == "post")
+
+
+mod_L_pre_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=l_pre)
+mod_L_post_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=l_post)
+
+sum_L_pre <- summary(mod_L_pre_cnt)
+sum_L_post <- summary(mod_L_post_cnt)
+
+#small scallops
+
+s_pre <- no_outliers_s %>% filter(Homer_fix == "pre")
+s_post <- no_outliers_s %>% filter(Homer_fix == "post")
+
+
+mod_S_pre_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=s_pre)
+mod_S_post_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=s_post)
+
+sum_S_pre <- summary(mod_S_pre_cnt)
+sum_S_post <- summary(mod_S_post_cnt)
+
+##################################
+#get FPC estimator
+###########################
+
+
+#large pre repair
+s_L_pre <- sum_L_pre$coefficients[2,2]  
+g_L_pre <- sum_L_pre$coefficients[2,1]
+
+FPC_large_pre <- exp(2*g_L_pre*(1+(0.5*(s_L_pre^2)))) #1.87
+
+#large post repair
+s_L_post <- sum_L_post$coefficients[2,2]  
+g_L_post <- sum_L_post$coefficients[2,1]
+
+FPC_large_post <- exp(2*g_L_post*(1+(0.5*(s_L_post^2)))) #0.88 #oof, pre and post repair are very different FPC's.
+
+#small pre repair
+s_S_pre <- sum_S_pre$coefficients[2,2]  
+g_S_pre <- sum_S_pre$coefficients[2,1]
+
+FPC_small_pre <- exp(2*g_S_pre*(1+(0.5*(s_S_pre^2)))) #1.64
+
+#small post repair
+s_S_post <- sum_S_post$coefficients[2,2]  
+g_S_post <- sum_S_post$coefficients[2,1]
+
+FPC_small_post <- exp(2*g_S_post*(1+(0.5*(s_S_post^2))))#0.87
+
+
+
+
+##########################
+#get confidence intervals
+#####################
+upper_CI_L_pre <- exp(2*g_L_pre + 1.96*2*s_L_pre)
+lower_CI_L_pre <- exp(2*g_L_pre - 1.96*2*s_L_pre)
+
+upper_CI_L_post <- exp(2*g_L_post + 1.96*2*s_L_post)
+lower_CI_L_post <- exp(2*g_L_post - 1.96*2*s_L_post)
+
+upper_CI_S_pre <- exp(2*g_S_pre + 1.96*2*s_S_pre)
+lower_CI_S_pre <- exp(2*g_S_pre - 1.96*2*s_S_pre)
+
+upper_CI_S_post <- exp(2*g_S_post + 1.96*2*s_S_post)
+lower_CI_S_post <- exp(2*g_S_post - 1.96*2*s_S_post)
+
+
+
+
+
+
+
+
+#get the combined FPC as well. for scallop count.
+#yes
+##large scallops combined FPC
+
+mod_L_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=no_outliers_l)
+
+sum_L_cnt <- summary(mod_L_cnt)
+
+
+##small scallops combined FPC
+mod_S_cnt <- lm(log(cpue_cnt+1) ~ gear_code + haul, data=no_outliers_s)
+
+sum_S_cnt <- summary(mod_S_cnt)
+
+##FPC's
+#large
+s_L <- sum_L_cnt$coefficients[2,2]  
+g_L <- sum_L_cnt$coefficients[2,1]
+
+FPC_large_cnt <- exp(2*g_L*(1+(0.5*(s_L^2)))) #1.472
+#small
+
+s_S <- sum_S_cnt$coefficients[2,2]  
+g_S <- sum_S_cnt$coefficients[2,1]
+
+FPC_small_cnt <- exp(2*g_S*(1+(0.5*(s_S^2)))) #1.321
+
+##get confidence intervals
+#large
+upper_CI_L <- exp(2*g_L + 1.96*2*s_L)
+lower_CI_L <- exp(2*g_L - 1.96*2*s_L)
+#small
+upper_CI_S <- exp(2*g_S + 1.96*2*s_S)
+lower_CI_S <- exp(2*g_S - 1.96*2*s_S)
+
+
+upper_CI <- c(upper_CI_L_pre, upper_CI_L_post, upper_CI_L, upper_CI_S_pre, upper_CI_S_post, upper_CI_S )
+lower_CI <- c(lower_CI_L_pre, lower_CI_L_post, lower_CI_L, lower_CI_S_pre,lower_CI_S_post, lower_CI_S)
+
+###############
+#make the table
+##############
+
+FPC <- c(FPC_large_pre, FPC_large_post, FPC_large_cnt, FPC_small_pre, FPC_small_post, FPC_small_cnt)
+Category <- factor(x=c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)"), levels=c("large(pre)" , "large(post)", "large(combined)", "small(pre)", "small(post)", "small(combined)"))
+
+scallop_FPC_table <- data.frame(Category, FPC)
+
+
+scallop_FPC_table$Upper_CI <- upper_CI
+scallop_FPC_table$Lower_CI <- lower_CI
+
+scallop_FPC_table$repair <- factor(x=c("pre", "post", "combined", "pre", "post", "combined"), levels=c("combined","pre", "post"))
+
+scallop_FPC_table#$repair <- reorder(scallop_FPC_table$repair, X=c("combined", "pre", "post"))
+
+
+
+write.csv(scallop_FPC_table, "results/Scallop FPC Table without outliers.csv")
+
+#FPC graph without outliers
+(FPC_graph_document <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +  #cleaning up fig for the paper
+    geom_errorbar(aes(ymin=Lower_CI, ymax=Upper_CI)) +
+    geom_point(size=4, aes(color=repair))+
+    geom_hline(aes(yintercept=1), color="red", size=1, linetype="dashed")+
+    theme_cowplot()+
+    scale_color_brewer(palette = "Set1")+
+    labs(color= "Homer dredge repair status", x=element_blank())+
+    scale_y_continuous( limits=c(0.6,3.5), expand=c(0,0), breaks=c(1,2,3)) +
+    ggtitle("Randomized block ANOVA without outleirs"))
+    
+
+ggsave("figures/FPC_graph_nooutliers.jpg",plot=FPC_graph_document, height=5, width=10, units="in")
+#error bars are smaller but no chagne in results
+```
+
