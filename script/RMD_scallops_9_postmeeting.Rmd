@@ -702,7 +702,7 @@ ks_weighted_result_4
 
 #pre and post homer dredge fix: how did fixing homer dredge change density
 pre_homer_spec <- homer_spec %>% filter(Homer_fix == "pre")
-post_homer_spec <- kodiak_spec %>% filter(Homer_fix == "post")
+post_homer_spec <- homer_spec %>% filter(Homer_fix == "post")
 
 homer_spec$Homer_fix <- factor(homer_spec$Homer_fix, levels=c("pre", "post"))
 
@@ -729,10 +729,55 @@ ggsave("figures/Density plot Homer fix.jpg", ccc, height=5, width=10)
 ```
 
 
+Kodiak dredde consistency aside. Something is wrong here
+```{r}
+#setup
+kodiak_spec$Homer_fix <- factor(kodiak_spec$Homer_fix, levels=c("pre", "post"))
+
+#graph
+ddd<-ggplot(kodiak_spec) + aes(x=shell_height, color=factor(Homer_fix), group=factor(Homer_fix)) + geom_density(aes(weight=sample_factor), linewidth=1.2, alpha=0.5) + #is sample factor based off of # cpue? needs to be. Yes, we are good there.
+#facet_wrap(~gear_code, ncol=1) +
+theme_cowplot()+ 
+#scale_color_manual(values = c("royalblue", "goldenrod"), labels=c("Pre", "Post"))+ #might want to change colors to match color scheme
+xlab("Shell height")+
+ylab("Density")+
+ggtitle("Shell height density")+
+labs(color=NULL)+
+    theme_cowplot()
+ddd
+ccc
+
+#facet wrap by year
+ggplot(kodiak_spec) + aes(x=shell_height, color=factor(Homer_fix), group=factor(Homer_fix)) + geom_density(aes(weight=sample_factor), linewidth=1.2, alpha=0.5) + #is sample factor based off of # cpue? needs to be. Yes, we are good there.
+#facet_wrap(~gear_code, ncol=1) +
+theme_cowplot()+ 
+#scale_color_manual(values = c("royalblue", "goldenrod"), labels=c("Pre", "Post"))+ #might want to change colors to match color scheme
+xlab("Shell height")+
+ylab("Density")+
+ggtitle("Shell height density")+
+labs(color=NULL)+
+    theme_cowplot()+
+    facet_wrap(~cruise_year)
+
+
+ggplot(homer_spec) + aes(x=shell_height, color=factor(Homer_fix), group=factor(Homer_fix)) + geom_density(aes(weight=sample_factor), linewidth=1.2, alpha=0.5) + #is sample factor based off of # cpue? needs to be. Yes, we are good there.
+#facet_wrap(~gear_code, ncol=1) +
+theme_cowplot()+ 
+#scale_color_manual(values = c("royalblue", "goldenrod"), labels=c("Pre", "Post"))+ #might want to change colors to match color scheme
+xlab("Shell height")+
+ylab("Density")+
+ggtitle("Shell height density, all scallop sizes")+
+labs(color=NULL)+
+    theme_cowplot()+
+    facet_wrap(~cruise_year)
+```
+
+
 
 OVerall summary stats
 Mean, sd, etc
 ```{r}
+
 
 ```
 
