@@ -685,7 +685,9 @@ xlab("Shell height")+
 ylab("Density")+
 ggtitle("Shell height density, all scallop sizes")+
 labs(color=NULL)+
-    theme_cowplot()
+    theme_cowplot()#+
+    #scale_x_continuous(breaks=c(50, 100, 150, 200), limits=c(0, 200), expand=c(0,0))+
+    #scale_y_continuous(breaks=c(0.01, 0.02, 0.03, 0.04), limits=c(0, 0.04))
 
 ggsave("figures/Density plot.jpg", bbb, height=5, width=10)
 
@@ -729,7 +731,7 @@ ggsave("figures/Density plot Homer fix.jpg", ccc, height=5, width=10)
 ```
 
 
-Kodiak dredde consistency aside. Something is wrong here
+Kodiak dredde consistency aside.
 ```{r}
 #setup
 kodiak_spec$Homer_fix <- factor(kodiak_spec$Homer_fix, levels=c("pre", "post"))
