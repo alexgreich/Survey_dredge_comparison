@@ -412,7 +412,7 @@ FPC_graph_document <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +  #cle
 #get rid of "repair" or name it somethign better
 #switch the pre and post factor order, so it goes pre then post
 
-ggsave("figures/FPC_graph.jpg",plot=FPC_graph, height=5, width=10, units="in")
+#ggsave("figures/FPC_graph.jpg",plot=FPC_graph, height=5, width=10, units="in")
 
 ```
 
@@ -681,9 +681,9 @@ bbb<-ggplot(specimen) + aes(x=shell_height, color=factor(gear_code), group=facto
 #facet_wrap(~gear_code, ncol=1) +
 theme_cowplot()+ 
 scale_color_manual(values = c("blue", "orange"), labels=c("Homer dredge", "Kodiak dredge"))+ #might want to change colors to match color scheme
-xlab("Shell height")+
+xlab("Shell height (mm)")+
 ylab("Density")+
-ggtitle("Shell height density, all scallop sizes")+
+#ggtitle("Shell height density, all scallop sizes")+
 labs(color=NULL)+
     theme_cowplot()#+
     #scale_x_continuous(breaks=c(50, 100, 150, 200), limits=c(0, 200), expand=c(0,0))+
@@ -725,7 +725,7 @@ ks_weighted_result_prepost <- Ecume::ks_test(x=pre_homer_spec$shell_height, y=po
 
 ks_weighted_result_prepost
 
-ggsave("figures/Density plot Homer fix.jpg", ccc, height=5, width=10)
+#ggsave("figures/Density plot Homer fix.jpg", ccc, height=5, width=10)
 
 
 ```
