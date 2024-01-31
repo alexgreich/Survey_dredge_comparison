@@ -612,7 +612,9 @@ f_sim_plot <- function(data, fpc){
    # scale_color_manual(values = cb_palette[c(1,3)])+
     geom_vline(aes(xintercept = fpc), linetype = 2)+ #add in later? PROBS. AR
     labs(x = "Fishing Power Difference", y = "MSE", color = NULL)+
-    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2)) -> x
+    scale_x_continuous(breaks = seq(0, 2, 0.2), limits = c(0, 2))+
+        theme_cowplot()+
+        scale_color_manual(values=c("grey", "steelblue"))-> x #adding this line
   # save
  # ggsave(paste0(path_prefix, spp_name, ".png"), plot = x, width = 5, height = 4, units = "in")
   return(x)
@@ -647,26 +649,31 @@ length(s_post$haul)/2
 RB_ANOVA_mse_small_post <- f_mse_sim_AR1(data=s_post, n=15, method=2) 
 plot_RB_ANOVA_mse_small_post<- f_sim_plot(data=RB_ANOVA_mse_small_post, fpc=scallop_FPC_table[5,2])
 
-
-plot_RB_ANOVA_mse_large
-plot_RB_ANOVA_mse_small
-plot_RB_ANOVA_mse_large_pre
-plot_RB_ANOVA_mse_large_post
-plot_RB_ANOVA_mse_small_pre
-plot_RB_ANOVA_mse_small_post
+#untested but I added labels
+plot_RB_ANOVA_mse_large <- plot_RB_ANOVA_mse_large +ggtitle("Combined") + scale_y_continuous(labels=label_comma()) + ylab(NULL)
+plot_RB_ANOVA_mse_small <- plot_RB_ANOVA_mse_small +ggtitle("Combined") + scale_y_continuous(labels=label_comma()) + ylab(NULL)
+plot_RB_ANOVA_mse_large_pre <- plot_RB_ANOVA_mse_large_pre + ggtitle("Pre") + scale_y_continuous(labels=label_comma())
+plot_RB_ANOVA_mse_large_post <- plot_RB_ANOVA_mse_large_post + ggtitle("Post") + scale_y_continuous(labels=label_comma()) + ylab(NULL)
+plot_RB_ANOVA_mse_small_pre <- plot_RB_ANOVA_mse_small_pre + ggtitle("Pre") + scale_y_continuous(labels=label_comma())
+plot_RB_ANOVA_mse_small_post <- plot_RB_ANOVA_mse_small_post + ggtitle("Post") + scale_y_continuous(labels=label_comma()) + ylab(NULL)
 #and then SAVE ENVIRONMENT!!
 
 ```
 Save the MSE plots
 ```{r}
-comb1 <-plot_RB_ANOVA_mse_large_pre + plot_RB_ANOVA_mse_large_post + plot_RB_ANOVA_mse_large
+comb1 <-plot_RB_ANOVA_mse_large_pre + plot_RB_ANOVA_mse_large_post + plot_RB_ANOVA_mse_large +
+    plot_layout(guides = "collect") #+
+ #comb1 +   scale_y_continuous(labels=label_comma())#+
+    #theme(legend.position = "bottom") #untested but try it
 
-comb2 <-plot_RB_ANOVA_mse_small_pre + plot_RB_ANOVA_mse_small_post + plot_RB_ANOVA_mse_small
+comb2 <-plot_RB_ANOVA_mse_small_pre + plot_RB_ANOVA_mse_small_post + plot_RB_ANOVA_mse_small+
+    plot_layout(guides = "collect") #+
+   # theme(legend.position = "bottom") #untested but try it
 
-ggsave("figures/MSE_L.jpg", plot=comb1, height=3, width=12, units="in")
-ggsave("figures/MSE_S.jpg", plot=comb2, height=3, width=12, units="in")
+ggsave("figures/MSE_L_3.jpg", plot=comb1, height=3, width=15, units="in")
+ggsave("figures/MSE_S_3.jpg", plot=comb2, height=3, width=15, units="in")
 
-#once I save these, I can put them in the ppt
+#consider changing color sceme before publication. Maybe grey and blue.
 ```
 
 
@@ -700,7 +707,14 @@ kodiak_spec <- specimen %>% filter(gear_code==5)
 
 ks_weighted_result_4 <- Ecume::ks_test(x=homer_spec$shell_height, y=kodiak_spec$shell_height, thresh= 0, w_x=(homer_spec$sample_factor/100),  w_y=(kodiak_spec$sample_factor/100)) #weighted test
 
-ks_weighted_result_4
+ks_weighted_result_4 #make this a results csv
+ks_p <- ks_weighted_result_4$p.value
+ks_teststat_D <- ks_weighted_result_4$statistic
+method <- ks_weighted_result_4$method
+
+density_results <- data.frame(ks_teststat_D, ks_p, method)
+
+write.csv(x=density_results, file = "results/Weighted Kolmogorov Smirnov all scallops.csv")
 
 #pre and post homer dredge fix: how did fixing homer dredge change density
 pre_homer_spec <- homer_spec %>% filter(Homer_fix == "pre")
@@ -723,7 +737,7 @@ ccc
 
 ks_weighted_result_prepost <- Ecume::ks_test(x=pre_homer_spec$shell_height, y=post_homer_spec$shell_height, thresh= 0, w_x=(pre_homer_spec$sample_factor/100),  w_y=(post_homer_spec$sample_factor/100)) #weighted test
 
-ks_weighted_result_prepost
+#ks_weighted_result_prepost
 
 #ggsave("figures/Density plot Homer fix.jpg", ccc, height=5, width=10)
 
