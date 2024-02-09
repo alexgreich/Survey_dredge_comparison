@@ -424,7 +424,10 @@ FPC_graph_document <- ggplot(scallop_FPC_table) + aes(x=Category, y=FPC) +  #cle
 #get rid of "repair" or name it somethign better
 #switch the pre and post factor order, so it goes pre then post
 
-#ggsave("figures/FPC_graph.jpg",plot=FPC_graph, height=5, width=10, units="in")
+ggsave("figures/FPC_graph.jpg",plot=FPC_graph, height=5, width=10, units="in")
+
+
+#fpc graph just for th RB ANOVA analysis
 
 ```
 
@@ -740,7 +743,7 @@ theme_cowplot()+
 scale_color_manual(values = c("royalblue", "goldenrod"), labels=c("Pre", "Post"))+ #might want to change colors to match color scheme
 xlab("Shell height")+
 ylab("Density")+
-ggtitle("Shell height density, all scallop sizes")+
+ggtitle("Shell height density, Homer dredge")+
 labs(color=NULL)+
     theme_cowplot()
 ccc
@@ -769,7 +772,7 @@ theme_cowplot()+
 #scale_color_manual(values = c("royalblue", "goldenrod"), labels=c("Pre", "Post"))+ #might want to change colors to match color scheme
 xlab("Shell height")+
 ylab("Density")+
-ggtitle("Shell height density")+
+ggtitle("Shell height density, Kodiak dredge")+
 labs(color=NULL)+
     theme_cowplot()
 ddd
