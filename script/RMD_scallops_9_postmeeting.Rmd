@@ -69,6 +69,18 @@ length(unique(a$haul)) #38 paired hauls in 2023
 
 b<- logbook %>% filter(cruise_year==2022)
 length(unique(b$haul)) #10 paired hauls in 2022
+
+#make a table of paired tows by bed, and by year
+#make a table of paired tows by bed, and by year
+c <- a %>%
+    group_by(bed_code)%>%
+    summarise(count=n()/2) #2023
+
+d <- b %>%
+    group_by(bed_code)%>%
+    summarise(count=n()/2) #2022
+
+
 ```
 
 
